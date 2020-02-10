@@ -87,8 +87,7 @@ func createBinding(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if resp.StatusCode == http.StatusOK{
-
+	if resp.StatusCode == http.StatusOK {
 
 		defer func() {
 			closeError := resp.Body.Close()
@@ -102,7 +101,7 @@ func createBinding(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 
-		id := b.VirtualHostNode +"|" + b.VirtualHost + "|" + b.Exchange + "|" + b.Destination + "|" + b.BindingKey
+		id := b.VirtualHostNode + "|" + b.VirtualHost + "|" + b.Exchange + "|" + b.Destination + "|" + b.BindingKey
 		d.SetId(id)
 		if !result {
 			return fmt.Errorf("binding already exist for destination '%s' and exchange '%s' with binding key '%s' on host '%s/%s'",
@@ -130,7 +129,7 @@ func buildBinding(d *schema.ResourceData) (*Binding, error) {
 	return &Binding{
 		bindingKey,
 		destination,
-		  exchange,
+		exchange,
 		args,
 		parents[0],
 		parents[1]}, nil
@@ -261,7 +260,6 @@ func updateBinding(d *schema.ResourceData, meta interface{}) error {
 	if resp.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("qpid exchange '%s'does not exist on virtual host '%s/%s'", b.Exchange, b.VirtualHostNode, b.VirtualHost)
 	}
-
 
 	return fmt.Errorf("error updating qpid binding of destination '%s' to exchange '%s' using key '%s' on host '%s/%s': %s",
 		b.Destination, b.Exchange, b.BindingKey, b.VirtualHostNode, b.VirtualHost, resp.Status)

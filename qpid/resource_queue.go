@@ -84,7 +84,7 @@ func resourceQueue() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Default:  nil,
+				Default: nil,
 			},
 
 			"alternate_binding": {
@@ -101,14 +101,14 @@ func resourceQueue() *schema.Resource {
 						"attributes": {
 							Type:     schema.TypeMap,
 							Optional: true,
-							Default: nil,
+							Default:  nil,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 					},
 				},
-				Default:  nil,
+				Default: nil,
 			},
 
 			"exclusive": {
@@ -253,7 +253,7 @@ func resourceQueue() *schema.Resource {
 				Optional:         true,
 				ValidateFunc:     validation.ValidateJsonString,
 				DiffSuppressFunc: structure.SuppressJsonDiff,
-				Default:  nil,
+				Default:          nil,
 			},
 
 			"hold_on_publish_enabled": {
@@ -403,18 +403,18 @@ func readQueue(d *schema.ResourceData, meta interface{}) error {
 		keyCamelCased := convertToCamelCase(key)
 		value, attributeSet := (*attributes)[keyCamelCased]
 
-		if key!="parents" && ( keySet || attributeSet ){
+		if key != "parents" && (keySet || attributeSet) {
 			isString := false
 			if value != nil {
-				_, isString =  value.(string)
+				_, isString = value.(string)
 			}
 			log.Printf("queue attribute: %s=%v, is string: %v", key, value, isString)
 
 			if key == "alternate_binding" {
 				val := value.(map[string]interface{})
-				value = []interface{}{ createMapWithKeysUnderscored(&val) }
+				value = []interface{}{createMapWithKeysUnderscored(&val)}
 			}
-			if key == "default_filters" && value != nil && !isString{
+			if key == "default_filters" && value != nil && !isString {
 				jsonData, err := json.Marshal(value)
 				if err != nil {
 					return err
@@ -465,7 +465,7 @@ func deleteQueue(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode != http.StatusNotFound{
+	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("error deleting qpid queue '%s' on virtual host %s/%s: %d", name, parents[0], parents[1], resp.StatusCode)
 	}
 	d.SetId("")

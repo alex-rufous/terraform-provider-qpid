@@ -86,10 +86,10 @@ func Provider() terraform.ResourceProvider {
 
 		ResourcesMap: map[string]*schema.Resource{
 			"qpid_virtual_host_node": resourceVirtualHostNode(),
-			"qpid_virtual_host": resourceVirtualHost(),
-			"qpid_queue": resourceQueue(),
-			"qpid_exchange": resourceExchange(),
-			"qpid_binding": resourceBinding(),
+			"qpid_virtual_host":      resourceVirtualHost(),
+			"qpid_queue":             resourceQueue(),
+			"qpid_exchange":          resourceExchange(),
+			"qpid_binding":           resourceBinding(),
 		},
 
 		ConfigureFunc: providerConfigure,

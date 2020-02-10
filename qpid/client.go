@@ -141,14 +141,13 @@ func (c *Client) CreateBinding(b *Binding) (*http.Response, error) {
 	return c.makeBinding(b, false)
 }
 
-
 func (c *Client) UpdateBinding(b *Binding) (*http.Response, error) {
 
 	return c.makeBinding(b, true)
 }
 
 func (c *Client) GetBinding(b *Binding) (*Binding, error) {
-	path := "exchange/" + url.PathEscape(b.VirtualHostNode) + "/" + url.PathEscape(b.VirtualHost) + "/" + url.PathEscape(b.Exchange )
+	path := "exchange/" + url.PathEscape(b.VirtualHostNode) + "/" + url.PathEscape(b.VirtualHost) + "/" + url.PathEscape(b.Exchange)
 	attributes, err := c.getConfiguredObjectAttributes(path, false)
 	if err != nil {
 		return &Binding{}, err
@@ -159,12 +158,12 @@ func (c *Client) GetBinding(b *Binding) (*Binding, error) {
 	}
 	bindings := (*attributes)["bindings"]
 
-	log.Printf("exchange %s bindings %v ",b.Exchange , bindings )
+	log.Printf("exchange %s bindings %v ", b.Exchange, bindings)
 	if bindings != nil {
 		bs := bindings.([]interface{})
 		for _, bn := range bs {
 			bnd := bn.(map[string]interface{})
-			log.Printf("binding %v for destination %v",bnd["name"], bnd["destination"] )
+			log.Printf("binding %v for destination %v", bnd["name"], bnd["destination"])
 			if bnd["name"] == b.BindingKey && bnd["destination"] == b.Destination {
 				args := bnd["arguments"]
 				var arguments map[string]string
@@ -191,13 +190,38 @@ func (c *Client) makeBinding(b *Binding, replaceExistingArguments bool) (*http.R
 		"bindingKey":               b.BindingKey,
 		"arguments":                b.Arguments,
 		"replaceExistingArguments": replaceExistingArguments}
-	return c.restClient.Post("exchange/"+url.PathEscape(b.VirtualHostNode)+"/"+url.PathEscape(b.VirtualHost)+"/"+url.PathEscape(b.Exchange) + "/bind", arguments)
+	return c.restClient.Post("exchange/"+url.PathEscape(b.VirtualHostNode)+"/"+url.PathEscape(b.VirtualHost)+"/"+url.PathEscape(b.Exchange)+"/bind", arguments)
 }
-
 
 func (c *Client) DeleteBinding(b *Binding) (*http.Response, error) {
 	var arguments = &map[string]interface{}{
-		"destination":              b.Destination,
-		"bindingKey":               b.BindingKey}
-	return c.restClient.Post("exchange/"+url.PathEscape(b.VirtualHostNode)+"/"+url.PathEscape(b.VirtualHost)+"/"+url.PathEscape(b.Exchange) + "/unbind", arguments)
+		"destination": b.Destination,
+		"bindingKey":  b.BindingKey}
+	return c.restClient.Post("exchange/"+url.PathEscape(b.VirtualHostNode)+"/"+url.PathEscape(b.VirtualHost)+"/"+url.PathEscape(b.Exchange)+"/unbind", arguments)
+}
+
+func (c *Client) listConfiguredObjets(path string, actuals bool) (*[]map[string]interface{}, error) {
+	v := url.Values{}
+	v.Set("actuals", strconv.FormatBool(actuals))
+	return c.restClient.GetAsArray(path, v)
+}
+
+func (c *Client) GetVirtualHostNodes() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("virtualhostnode", true)
+}
+
+func (c *Client) GetVirtualHosts() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("virtualhost", true)
+}
+
+func (c *Client) GetNodeVirtualHosts(nodeName string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("virtualhost/"+url.PathEscape(nodeName), true)
+}
+
+func (c *Client) getQueues() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("queue", true)
+}
+
+func (c *Client) getVirtualHostQueues(nodeName string, hostName string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("queue/"+url.PathEscape(nodeName)+"/"+url.PathEscape(hostName), true)
 }

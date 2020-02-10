@@ -30,7 +30,7 @@ func (c BasicAuthCredentials) Set(request *http.Request) error {
 }
 
 // String ...
-func (c* BasicAuthCredentials) String() string {
+func (c *BasicAuthCredentials) String() string {
 	return "BasicAuthCredentials [username: " + c.Username + "]"
 }
 
@@ -93,7 +93,6 @@ func (c *SimpleRestClient) GetAsMap(path string, query url.Values) (*map[string]
 	return convertHttpResponseToMap(res)
 }
 
-
 // Submit sends given map of attributes to the server into given path using given method
 func (c *SimpleRestClient) Submit(method string, path string, attributes *map[string]interface{}) (res *http.Response, err error) {
 	body, err := json.Marshal(*attributes)
@@ -134,7 +133,7 @@ func (c *SimpleRestClient) newGetHTTPRequest(path string) (*http.Request, error)
 }
 
 func (c *SimpleRestClient) newGetHTTPRequestWithParameters(path string, qs url.Values) (*http.Request, error) {
-	return c.newHTTPRequest(http.MethodGet, path + "?" + qs.Encode(), nil)
+	return c.newHTTPRequest(http.MethodGet, path+"?"+qs.Encode(), nil)
 }
 
 func (c *SimpleRestClient) newHTTPRequest(method string, path string, body []byte) (*http.Request, error) {
@@ -174,4 +173,18 @@ func (c *SimpleRestClient) executeHTTPRequest(req *http.Request) (res *http.Resp
 		return resp, errors.New("error: 401 unauthorized")
 	}
 	return resp, err
+}
+
+func (c *SimpleRestClient) GetAsArray(path string, query url.Values) (*[]map[string]interface{}, error) {
+	req, err := c.newGetHTTPRequestWithParameters(path, query)
+	if err != nil {
+		return &[]map[string]interface{}{}, err
+	}
+
+	res, err := c.executeHTTPRequest(req)
+	if err != nil {
+		return &[]map[string]interface{}{}, err
+	}
+
+	return convertHttpResponseToArray(res)
 }

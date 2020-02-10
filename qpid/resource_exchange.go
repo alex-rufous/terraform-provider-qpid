@@ -81,7 +81,7 @@ func resourceExchange() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Default:  nil,
+				Default: nil,
 			},
 
 			"alternate_binding": {
@@ -98,14 +98,14 @@ func resourceExchange() *schema.Resource {
 						"attributes": {
 							Type:     schema.TypeMap,
 							Optional: true,
-							Default: nil,
+							Default:  nil,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 					},
 				},
-				Default:  nil,
+				Default: nil,
 			},
 
 			"unroutable_message_behaviour": {
@@ -203,10 +203,10 @@ func readExchange(d *schema.ResourceData, meta interface{}) error {
 		keyCamelCased := convertToCamelCase(key)
 		value, attributeSet := (*attributes)[keyCamelCased]
 
-		if key!="parents" && ( keySet || attributeSet ){
+		if key != "parents" && (keySet || attributeSet) {
 			isString := false
 			if value != nil {
-				_, isString =  value.(string)
+				_, isString = value.(string)
 			}
 			log.Printf("exchange attribute: %s=%v, is string: %v", key, value, isString)
 
@@ -258,7 +258,7 @@ func deleteExchange(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode != http.StatusNotFound{
+	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode != http.StatusNotFound {
 		return fmt.Errorf("error deleting qpid exchange '%s' on virtual host %s/%s: %d", name, parents[0], parents[1], resp.StatusCode)
 	}
 	d.SetId("")

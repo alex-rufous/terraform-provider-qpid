@@ -8,8 +8,6 @@ import (
 	"net/http"
 )
 
-
-
 func resourceVirtualHostNode() *schema.Resource {
 	return &schema.Resource{
 		Create: createVirtualHostNode,
@@ -49,7 +47,7 @@ func resourceVirtualHostNode() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default: nil,
+				Default:  nil,
 			},
 
 			"durable": {
@@ -74,7 +72,7 @@ func resourceVirtualHostNode() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Default:  nil,
+				Default: nil,
 			},
 
 			"default_virtual_host_node": {
@@ -101,7 +99,7 @@ func resourceVirtualHostNode() *schema.Resource {
 			// only applicable for types BDB, BDB_HA, JSON and DERBY
 			"store_path": {
 				Type:          schema.TypeString,
-				Default: nil,
+				Default:       nil,
 				Optional:      true,
 				ForceNew:      false,
 				ConflictsWith: []string{"connection_url", "connection_pool_type", "username", "password", "table_name_prefix"},
@@ -284,11 +282,11 @@ func readVirtualHostNode(d *schema.ResourceData, meta interface{}) error {
 	for key := range schemaMap {
 		_, keySet := d.GetOk(key)
 		keyCamelCased := convertToCamelCase(key)
-		value, attributeSet :=(*attributes)[keyCamelCased]
+		value, attributeSet := (*attributes)[keyCamelCased]
 
-		if keySet || attributeSet{
+		if keySet || attributeSet {
 
-			if key == "permitted_nodes" && value != nil{
+			if key == "permitted_nodes" && value != nil {
 				val, expected := value.([]interface{})
 				if expected {
 					value = convertToArrayOfStrings(&val)

@@ -78,7 +78,6 @@ func convertToMapOfStrings(m *map[string]interface{}) *map[string]string {
 	return &result
 }
 
-
 func convertIfValueIsStringWhenPrimitiveIsExpected(value interface{}, schemaType schema.ValueType) (interface{}, error) {
 	var stringValue string
 	var err error = nil
@@ -102,8 +101,7 @@ func convertIfValueIsStringWhenPrimitiveIsExpected(value interface{}, schemaType
 	return value, err
 }
 
-
-func convertHttpResponseToMap(res *http.Response)(*map[string]interface{}, error) {
+func convertHttpResponseToMap(res *http.Response) (*map[string]interface{}, error) {
 	var err error
 	defer func() {
 		closeError := res.Body.Close()
@@ -117,12 +115,7 @@ func convertHttpResponseToMap(res *http.Response)(*map[string]interface{}, error
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
-		var rme map[string]interface{}
-		err = json.NewDecoder(res.Body).Decode(&rme)
-		if rme["message"] != nil {
-			err = fmt.Errorf("error : %s", rme["message"])
-		}
-		return &rme, err
+		return getErrorResponse(res)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -145,4 +138,46 @@ func convertHttpResponseToMap(res *http.Response)(*map[string]interface{}, error
 	}
 
 	return &m, nil
+}
+
+func convertHttpResponseToArray(res *http.Response) (*[]map[string]interface{}, error) {
+	var err error
+	defer func() {
+		closeError := res.Body.Close()
+		if err == nil {
+			err = closeError
+		}
+	}()
+
+	if res.StatusCode >= http.StatusNotFound {
+		return &[]map[string]interface{}{}, nil
+	}
+
+	if res.StatusCode >= http.StatusBadRequest {
+		_, err = getErrorResponse(res)
+		return &[]map[string]interface{}{}, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return &[]map[string]interface{}{}, err
+	}
+
+	// try decoding as array of maps
+	var result []map[string]interface{}
+	err = json.Unmarshal([]byte(body), &result)
+	if err != nil {
+		return &[]map[string]interface{}{}, err
+	}
+
+	return &result, nil
+}
+
+func getErrorResponse(res *http.Response) (*map[string]interface{}, error) {
+	var rme map[string]interface{}
+	err := json.NewDecoder(res.Body).Decode(&rme)
+	if rme["message"] != nil {
+		err = fmt.Errorf("error : %s", rme["message"])
+	}
+	return &rme, err
 }
