@@ -225,3 +225,7 @@ func (c *Client) getQueues() (*[]map[string]interface{}, error) {
 func (c *Client) getVirtualHostQueues(nodeName string, hostName string) (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("queue/"+url.PathEscape(nodeName)+"/"+url.PathEscape(hostName), true)
 }
+
+func (c *Client) getVirtualHostExchanges(nodeName string, hostName string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("exchange/"+url.PathEscape(nodeName)+"/"+url.PathEscape(hostName), true)
+}

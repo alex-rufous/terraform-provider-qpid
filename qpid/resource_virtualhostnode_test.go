@@ -18,24 +18,24 @@ func TestAcceptanceVirtualHostNode(t *testing.T) {
 			{
 				Config: testAcceptanceVirtualHostNodeConfigMinimal,
 				Check: testAcceptanceVirtualHostNodeCheck(
-					"qpid_virtual_host_node.test", &virtualHostNodeName,
+					"qpid_virtual_host_node.acceptance_test", &virtualHostNodeName,
 				),
 			},
 			{
-				PreConfig: dropVirtualHostNode(&virtualHostNodeName),
+				PreConfig: dropVirtualHostNode("acceptance_test"),
 				Config:    testAcceptanceVirtualHostNodeConfigMinimal,
 				Check: testAcceptanceVirtualHostNodeCheck(
-					"qpid_virtual_host_node.test", &virtualHostNodeName,
+					"qpid_virtual_host_node.acceptance_test", &virtualHostNodeName,
 				),
 			},
 		},
 	})
 }
 
-func dropVirtualHostNode(nodeName *string) func() {
+func dropVirtualHostNode(nodeName string) func() {
 	return func() {
 		client := testAcceptanceProvider.Meta().(*Client)
-		resp, err := client.DeleteVirtualHostNode(*nodeName)
+		resp, err := client.DeleteVirtualHostNode(nodeName)
 		if err != nil {
 			fmt.Printf("unable to delete virtual host node: %v", err)
 			return
@@ -94,8 +94,8 @@ func testAcceptanceVirtualHostNodeCheckDestroy(name string) resource.TestCheckFu
 }
 
 const testAcceptanceVirtualHostNodeConfigMinimal = `
-resource "qpid_virtual_host_node" "test" {
-    name = "test"
+resource "qpid_virtual_host_node" "acceptance_test" {
+    name = "acceptance_test"
     type = "JSON"
     virtual_host_initial_configuration = "{\"type\":\"BDB\"}"
 }`

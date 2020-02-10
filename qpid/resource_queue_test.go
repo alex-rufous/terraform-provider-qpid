@@ -2,12 +2,10 @@ package qpid
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
-	"testing"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"net/http"
+	"testing"
 )
 
 func TestAcceptanceQueue(t *testing.T) {
@@ -22,14 +20,14 @@ func TestAcceptanceQueue(t *testing.T) {
 			{
 				Config: testAcceptanceQueueConfigMinimal,
 				Check: testAcceptanceQueueCheck(
-					"qpid_queue.test", &virtualHostNodeName, &virtualHostName, &queueName,
+					"qpid_queue.test_queue", &virtualHostNodeName, &virtualHostName, &queueName,
 				),
 			},
 			{
-				PreConfig: dropQueue(virtualHostNodeName, virtualHostName, queueName),
+				PreConfig: dropQueue("acceptance_test", "acceptance_test_host", "test_queue"),
 				Config:    testAcceptanceQueueConfigMinimal,
 				Check: testAcceptanceQueueCheck(
-					"qpid_queue.test", &virtualHostNodeName, &virtualHostName, &queueName,
+					"qpid_queue.test_queue", &virtualHostNodeName, &virtualHostName, &queueName,
 				),
 			},
 		},
@@ -82,7 +80,7 @@ func testAcceptanceQueueCheckDestroy(virtualHostNodeName string, virtualHostName
 		client := testAcceptanceProvider.Meta().(*Client)
 
 		queues, err := client.getVirtualHostQueues(virtualHostNodeName, virtualHostName)
-		if err != nil && !strings.Contains(strings.ToLower(err.Error()), "not found") {
+		if err != nil {
 			return fmt.Errorf("error on getting queues: %s", err)
 		}
 
@@ -112,23 +110,23 @@ func dropQueue(nodeName string, hostName string, queueName string) func() {
 }
 
 const testAcceptanceQueueConfigMinimal = `
-resource "qpid_virtual_host_node" "foo" {
-    name = "foo"
+resource "qpid_virtual_host_node" "acceptance_test" {
+    name = "acceptance_test"
     type = "JSON"
     virtual_host_initial_configuration = "{}"
 }
 
-resource "qpid_virtual_host" "bar" {
-    depends_on = [qpid_virtual_host_node.foo]
-    name = "bar"
-    parent = "foo"
+resource "qpid_virtual_host" "acceptance_test_host" {
+    depends_on = [qpid_virtual_host_node.acceptance_test]
+    name = "acceptance_test_host"
+    parent = "acceptance_test"
     type = "BDB"
 }
 
-resource "qpid_queue" "test" {
-    name = "test"
-    depends_on = [qpid_virtual_host.bar]
-    parents = ["foo", "bar"]
+resource "qpid_queue" "test_queue" {
+    name = "test_queue"
+    depends_on = [qpid_virtual_host.acceptance_test_host]
+    parents = ["acceptance_test", "acceptance_test_host"]
     type = "standard"
 }
 `

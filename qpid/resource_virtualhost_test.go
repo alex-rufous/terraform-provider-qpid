@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"net/http"
-	"strings"
 	"testing"
 )
 
@@ -20,14 +19,14 @@ func TestAcceptanceVirtualHost(t *testing.T) {
 			{
 				Config: testAcceptanceVirtualHostConfigMinimal,
 				Check: testAcceptanceVirtualHostCheck(
-					"qpid_virtual_host.bar", &virtualHostNodeName, &virtualHostName,
+					"qpid_virtual_host.acceptance_test_host", &virtualHostNodeName, &virtualHostName,
 				),
 			},
 			{
-				PreConfig: dropVirtualHost(virtualHostNodeName, virtualHostName),
+				PreConfig: dropVirtualHost("acceptance_test", "acceptance_test_host"),
 				Config:    testAcceptanceVirtualHostConfigMinimal,
 				Check: testAcceptanceVirtualHostCheck(
-					"qpid_virtual_host.bar", &virtualHostNodeName, &virtualHostName,
+					"qpid_virtual_host.acceptance_test_host", &virtualHostNodeName, &virtualHostName,
 				),
 			},
 		},
@@ -74,7 +73,7 @@ func testAcceptanceVirtualHostCheckDestroy(virtualHostNodeName string, virtualHo
 		client := testAcceptanceProvider.Meta().(*Client)
 
 		hosts, err := client.GetNodeVirtualHosts(virtualHostNodeName)
-		if err != nil && !strings.Contains(strings.ToLower(err.Error()), "not found") {
+		if err != nil {
 			return fmt.Errorf("error on getting virtual hosts for node '%s' : %s", virtualHostName, err)
 		}
 
@@ -104,16 +103,16 @@ func dropVirtualHost(nodeName string, hostName string) func() {
 }
 
 const testAcceptanceVirtualHostConfigMinimal = `
-resource "qpid_virtual_host_node" "foo" {
-    name = "foo"
+resource "qpid_virtual_host_node" "acceptance_test" {
+    name = "acceptance_test"
     type = "JSON"
     virtual_host_initial_configuration = "{}"
 }
 
-resource "qpid_virtual_host" "bar" {
-    depends_on = [qpid_virtual_host_node.foo]
-    name = "bar"
-    parent = "foo"
+resource "qpid_virtual_host" "acceptance_test_host" {
+    depends_on = [qpid_virtual_host_node.acceptance_test]
+    name = "acceptance_test_host"
+    parent = "acceptance_test"
     type = "BDB"
     node_auto_creation_policy {
                                    pattern = ".*"
