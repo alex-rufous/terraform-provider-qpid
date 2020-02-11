@@ -147,40 +147,33 @@ func (c *Client) UpdateBinding(b *Binding) (*http.Response, error) {
 }
 
 func (c *Client) GetBinding(b *Binding) (*Binding, error) {
-	path := "exchange/" + url.PathEscape(b.VirtualHostNode) + "/" + url.PathEscape(b.VirtualHost) + "/" + url.PathEscape(b.Exchange)
-	attributes, err := c.getConfiguredObjectAttributes(path, false)
+	bindings, err := c.getExchangeBindings(b.VirtualHostNode, b.VirtualHost, b.Exchange)
 	if err != nil {
 		return &Binding{}, err
 	}
 
-	if len(*attributes) == 0 {
+	if len(*bindings) == 0 {
 		return nil, nil
 	}
-	bindings := (*attributes)["bindings"]
 
-	log.Printf("exchange %s bindings %v ", b.Exchange, bindings)
-	if bindings != nil {
-		bs := bindings.([]interface{})
-		for _, bn := range bs {
-			bnd := bn.(map[string]interface{})
-			log.Printf("binding %v for destination %v", bnd["name"], bnd["destination"])
-			if bnd["name"] == b.BindingKey && bnd["destination"] == b.Destination {
-				args := bnd["arguments"]
-				var arguments map[string]string
-				if args != nil {
-					i := args.(map[string]interface{})
-					arguments = *convertToMapOfStrings(&i)
-				}
-				return &Binding{
-					b.BindingKey,
-					b.Destination,
-					b.Exchange,
-					arguments,
-					b.VirtualHostNode,
-					b.VirtualHost}, nil
+	for _, bnd := range *bindings {
+		if bnd["name"] == b.BindingKey && bnd["destination"] == b.Destination {
+			args := bnd["arguments"]
+			var arguments map[string]string
+			if args != nil {
+				i := args.(map[string]interface{})
+				arguments = *convertToMapOfStrings(&i)
 			}
+			return &Binding{
+				b.BindingKey,
+				b.Destination,
+				b.Exchange,
+				arguments,
+				b.VirtualHostNode,
+				b.VirtualHost}, nil
 		}
 	}
+
 	return nil, nil
 }
 
@@ -228,4 +221,29 @@ func (c *Client) getVirtualHostQueues(nodeName string, hostName string) (*[]map[
 
 func (c *Client) getVirtualHostExchanges(nodeName string, hostName string) (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("exchange/"+url.PathEscape(nodeName)+"/"+url.PathEscape(hostName), true)
+}
+
+func (c *Client) getExchangeBindings(nodeName string, hostName string, exchange string) (*[]map[string]interface{}, error) {
+	path := "exchange/" + url.PathEscape(nodeName) + "/" + url.PathEscape(hostName) + "/" + url.PathEscape(exchange)
+	attributes, err := c.getConfiguredObjectAttributes(path, false)
+	if err != nil {
+		return &[]map[string]interface{}{}, err
+	}
+
+	if len(*attributes) == 0 {
+		return &[]map[string]interface{}{}, nil
+	}
+
+	bindings := (*attributes)["bindings"]
+
+	if bindings != nil {
+		bs := bindings.([]interface{})
+		result := make([]map[string]interface{}, len(bs))
+		for idx, bn := range bs {
+			bnd := bn.(map[string]interface{})
+			result[idx] = bnd
+		}
+		return &result, nil
+	}
+	return &[]map[string]interface{}{}, nil
 }
