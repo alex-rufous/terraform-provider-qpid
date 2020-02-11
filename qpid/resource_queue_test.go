@@ -45,14 +45,14 @@ func testAcceptanceQueueCheck(rn string, virtualHostNodeName *string, virtualHos
 			return fmt.Errorf("queue id not set")
 		}
 
-		nodeName, ok := rs.Primary.Attributes["parents.0"]
+		nodeName, ok := rs.Primary.Attributes["virtual_host_node"]
 		if !ok {
-			return fmt.Errorf("parents: node name is not set")
+			return fmt.Errorf("node name is not set")
 		}
 
-		hostName, ok := rs.Primary.Attributes["parents.1"]
+		hostName, ok := rs.Primary.Attributes["virtual_host"]
 		if !ok {
-			return fmt.Errorf("parents: host name is not set")
+			return fmt.Errorf("host name is not set")
 		}
 
 		client := testAcceptanceProvider.Meta().(*Client)
@@ -63,7 +63,7 @@ func testAcceptanceQueueCheck(rn string, virtualHostNodeName *string, virtualHos
 		}
 
 		for _, queue := range *queues {
-			if queue["id"] == rs.Primary.ID {
+			if queue["id"] != nil && queue["id"] == rs.Primary.ID {
 				*queueName = queue["name"].(string)
 				*virtualHostNodeName = nodeName
 				*virtualHostName = hostName
@@ -119,14 +119,15 @@ resource "qpid_virtual_host_node" "acceptance_test" {
 resource "qpid_virtual_host" "acceptance_test_host" {
     depends_on = [qpid_virtual_host_node.acceptance_test]
     name = "acceptance_test_host"
-    parent = "acceptance_test"
+    virtual_host_node = "acceptance_test"
     type = "BDB"
 }
 
 resource "qpid_queue" "test_queue" {
     name = "test_queue"
     depends_on = [qpid_virtual_host.acceptance_test_host]
-    parents = ["acceptance_test", "acceptance_test_host"]
+	virtual_host_node = "acceptance_test"
+    virtual_host = "acceptance_test_host"
     type = "standard"
 }
 `

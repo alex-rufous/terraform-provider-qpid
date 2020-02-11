@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"net/http"
-	"strings"
 )
 
 func resourceQueue() *schema.Resource {
@@ -30,16 +29,18 @@ func resourceQueue() *schema.Resource {
 				ForceNew:    true,
 			},
 
-			"parents": {
-				Type:        schema.TypeList,
-				Description: "Parents of Queue",
+			"virtual_host_node": {
+				Type:        schema.TypeString,
+				Description: "The name of Virtual Host Node parent",
 				Required:    true,
 				ForceNew:    true,
-				MaxItems:    2,
-				MinItems:    2,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+			},
+
+			"virtual_host": {
+				Type:        schema.TypeString,
+				Description: "The name of Virtual Host parent",
+				Required:    true,
+				ForceNew:    true,
 			},
 
 			"type": {
@@ -331,14 +332,13 @@ func createQueue(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	attributes := toQueueAttributes(d)
-	items := d.Get("parents").([]interface{})
-	var parents = *convertToArrayOfStrings(&items)
+	node := d.Get("virtual_host_node")
+	host := d.Get("virtual_host")
 
-	if len(parents) != 2 {
-		return fmt.Errorf("unexpected queue parents: %s", strings.Join(parents, "/"))
+	if host == nil || node == nil {
+		return fmt.Errorf("virtual_host_node and virtual_host are not set")
 	}
-
-	resp, err := client.CreateQueue(parents[0], parents[1], attributes)
+	resp, err := client.CreateQueue(node.(string), host.(string), attributes)
 	if err != nil {
 		return err
 	}
@@ -348,7 +348,7 @@ func createQueue(d *schema.ResourceData, meta interface{}) error {
 		attributes, err := convertHttpResponseToMap(resp)
 		if err != nil {
 			var err2 error
-			attributes, err2 = client.GetQueue(parents[0], parents[1], name)
+			attributes, err2 = client.GetQueue(node.(string), host.(string), name)
 			if err2 != nil {
 				return err
 			}
@@ -367,7 +367,7 @@ func toQueueAttributes(d *schema.ResourceData) *map[string]interface{} {
 	for key := range schemaMap {
 		var value interface{}
 		value, exists := d.GetOk(key)
-		if key != "parents" && exists {
+		if key != "virtual_host_node" && key != "virtual_host" && exists {
 			if key == "alternate_binding" {
 				val, expected := value.([]interface{})
 				if expected && len(val) == 1 {
@@ -385,10 +385,15 @@ func readQueue(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 
-	items := d.Get("parents").([]interface{})
-	var parents = *convertToArrayOfStrings(&items)
+	node := d.Get("virtual_host_node")
+	host := d.Get("virtual_host")
+
+	if host == nil || node == nil {
+		return fmt.Errorf("virtual_host_node and virtual_host are not set")
+	}
+
 	name := d.Get("name").(string)
-	attributes, err := client.GetQueue(parents[0], parents[1], name)
+	attributes, err := client.GetQueue(node.(string), host.(string), name)
 	if err != nil {
 		return err
 	}
@@ -403,7 +408,7 @@ func readQueue(d *schema.ResourceData, meta interface{}) error {
 		keyCamelCased := convertToCamelCase(key)
 		value, attributeSet := (*attributes)[keyCamelCased]
 
-		if key != "parents" && (keySet || attributeSet) {
+		if key != "virtual_host_node" && key != "virtual_host" && (keySet || attributeSet) {
 			isString := false
 			if value != nil {
 				_, isString = value.(string)
@@ -440,10 +445,15 @@ func existsQueue(d *schema.ResourceData, meta interface{}) (bool, error) {
 
 	client := meta.(*Client)
 
-	items := d.Get("parents").([]interface{})
-	var parents = *convertToArrayOfStrings(&items)
+	node := d.Get("virtual_host_node")
+	host := d.Get("virtual_host")
+
+	if host == nil || node == nil {
+		return false, fmt.Errorf("virtual_host_node and virtual_host are not set")
+	}
+
 	name := d.Get("name").(string)
-	attributes, err := client.GetQueue(parents[0], parents[1], name)
+	attributes, err := client.GetQueue(node.(string), host.(string), name)
 	if err != nil {
 		return false, err
 	}
@@ -457,16 +467,20 @@ func existsQueue(d *schema.ResourceData, meta interface{}) (bool, error) {
 func deleteQueue(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
-	items := d.Get("parents").([]interface{})
-	var parents = *convertToArrayOfStrings(&items)
+	node := d.Get("virtual_host_node")
+	host := d.Get("virtual_host")
+
+	if host == nil || node == nil {
+		return fmt.Errorf("virtual_host_node and virtual_host are not set")
+	}
 	name := d.Get("name").(string)
-	resp, err := client.DeleteQueue(parents[0], parents[1], name)
+	resp, err := client.DeleteQueue(node.(string), host.(string), name)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode != http.StatusNotFound {
-		return fmt.Errorf("error deleting qpid queue '%s' on virtual host %s/%s: %d", name, parents[0], parents[1], resp.StatusCode)
+		return fmt.Errorf("error deleting qpid queue '%s' on virtual host %s/%s: %d", name, node, host, resp.StatusCode)
 	}
 	d.SetId("")
 	return nil
@@ -474,12 +488,17 @@ func deleteQueue(d *schema.ResourceData, meta interface{}) error {
 
 func updateQueue(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
-	items := d.Get("parents").([]interface{})
-	var parents = *convertToArrayOfStrings(&items)
+	node := d.Get("virtual_host_node")
+	host := d.Get("virtual_host")
+
+	if host == nil || node == nil {
+		return fmt.Errorf("virtual_host_node and virtual_host are not set")
+	}
+
 	name := d.Get("name").(string)
 
 	attributes := toQueueAttributes(d)
-	resp, err := client.UpdateQueue(parents[0], parents[1], name, attributes)
+	resp, err := client.UpdateQueue(node.(string), host.(string), name, attributes)
 
 	if err != nil {
 		return err
@@ -490,8 +509,8 @@ func updateQueue(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("qpid queue '%s' on virtual host '%s/%s' does not exist", name, parents[0], parents[1])
+		return fmt.Errorf("qpid queue '%s' on virtual host '%s/%s' does not exist", name, node, host)
 	}
 
-	return fmt.Errorf("error updating qpid queue '%s' on virtua host '%s/%s': %s", name, parents[0], parents[1], resp.Status)
+	return fmt.Errorf("error updating qpid queue '%s' on virtua host '%s/%s': %s", name, node, host, resp.Status)
 }

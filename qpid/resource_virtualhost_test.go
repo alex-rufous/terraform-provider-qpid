@@ -44,7 +44,7 @@ func testAcceptanceVirtualHostCheck(rn string, virtualHostNodeName *string, virt
 			return fmt.Errorf("virtual host id not set")
 		}
 
-		nodeName, ok := rs.Primary.Attributes["parent"]
+		nodeName, ok := rs.Primary.Attributes["virtual_host_node"]
 		if !ok {
 			return fmt.Errorf("parent not set")
 		}
@@ -112,7 +112,7 @@ resource "qpid_virtual_host_node" "acceptance_test" {
 resource "qpid_virtual_host" "acceptance_test_host" {
     depends_on = [qpid_virtual_host_node.acceptance_test]
     name = "acceptance_test_host"
-    parent = "acceptance_test"
+    virtual_host_node = "acceptance_test"
     type = "BDB"
     node_auto_creation_policy {
                                    pattern = ".*"

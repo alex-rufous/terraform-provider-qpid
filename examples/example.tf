@@ -35,7 +35,7 @@ resource "qpid_virtual_host_node" "node1" {
 # Create a virtual host 'test'
 resource "qpid_virtual_host" "test" {
   depends_on = [qpid_virtual_host_node.test]
-  parent = "test"
+  virtual_host_node = "test"
   name = "test"
   type = "BDB"
   node_auto_creation_policy {
@@ -43,21 +43,22 @@ resource "qpid_virtual_host" "test" {
                                    created_on_publish = true
                                    created_on_consume = true
                                    node_type = "Queue"
-                                   attributes = {"maximum_delivery_attempts": "2", "alternate_binding" : "{\"destination\": \"bar\"}"}
+                                   attributes = {"maximum_delivery_attempts"= "2", "alternate_binding" = "{\"destination\": \"bar\"}"}
                             }
   node_auto_creation_policy {
                                    pattern = "auto-creation-topic.*"
                                    created_on_publish = true
                                    created_on_consume = false
                                    node_type = "Exchange"
-                                   attributes = {"unroutable_message_behaviour": "reject"}
+                                   attributes = {"unroutable_message_behaviour"= "reject"}
                             }
 }
 
 # Create a priority queue
 resource "qpid_queue" "my-priority-queue" {
   depends_on = [qpid_virtual_host.test]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "my-priority-queue"
   type = "priority"
   priorities = 10
@@ -67,7 +68,8 @@ resource "qpid_queue" "my-priority-queue" {
 # Create a standard queue
 resource "qpid_queue" "my-standard-queue" {
   depends_on = [qpid_virtual_host.test]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "my-standard-queue"
   type = "standard"
 }
@@ -75,7 +77,8 @@ resource "qpid_queue" "my-standard-queue" {
 # Create a last value queue
 resource "qpid_queue" "my-lvq" {
   depends_on = [qpid_virtual_host.test]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "my-lvq"
   type = "lvq"
   lvq_key = "myKey"
@@ -83,7 +86,8 @@ resource "qpid_queue" "my-lvq" {
 # Create a sorted queue
 resource "qpid_queue" "my-sorted-queue" {
   depends_on = [qpid_virtual_host.test]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "my-sorted-queue"
   type = "sorted"
   sort_key = "mySortedKey"
@@ -92,7 +96,8 @@ resource "qpid_queue" "my-sorted-queue" {
 # Create a  queue 'bar' with default filters
 resource "qpid_queue" "bar" {
   depends_on = [qpid_virtual_host.test]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "bar"
   type = "standard"
   maximum_message_ttl = 99999
@@ -103,7 +108,8 @@ resource "qpid_queue" "bar" {
 # Create a  queue 'foo'
 resource "qpid_queue" "foo" {
   depends_on = [qpid_virtual_host.test]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "foo"
   type = "standard"
   maximum_message_ttl = 99999
@@ -115,12 +121,14 @@ resource "qpid_queue" "foo" {
 resource "qpid_queue" "my-queue" {
   depends_on = [qpid_virtual_host.test, qpid_queue.bar]
   type = "standard"
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "my-queue"
+  minimum_message_ttl = 10000000
   alternate_binding {
     destination = "bar"
     attributes = {
-        "x-filter-jms-selector": "id>0"
+        "x-filter-jms-selector"= "id>0"
     }
   }
 }
@@ -128,45 +136,49 @@ resource "qpid_queue" "my-queue" {
 resource "qpid_queue" "blah" {
   depends_on = [qpid_virtual_host.test]
   type = "standard"
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "blah"
-  context = {"foo": "bar", "bar" : "foo", "one": "two"}
+  context = {"foo"= "bar", "bar" = "foo", "one"= "two"}
   maximum_delivery_attempts = 2
 }
 
 resource "qpid_exchange" "my_exchange" {
   depends_on = [qpid_virtual_host.test, qpid_queue.blah]
   type = "direct"
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   name = "my_exchange"
   alternate_binding {
     destination = "blah"
     attributes = {
-        "x-filter-jms-selector": "id>0"
+        "x-filter-jms-selector"= "id>0"
     }
   }
-  unroutable_message_behaviour = "REJECT"
+  unroutable_message_behaviour = "DISCARD"
 }
 
 resource "qpid_binding" "bnd" {
   depends_on = [qpid_queue.foo, qpid_exchange.my_exchange]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   binding_key = "bnd"
   destination = "bar"
   exchange = "my_exchange"
   arguments = {
-          "x-filter-jms-selector": "a is not null"
+          "x-filter-jms-selector"= "a is not null"
   }
 }
 
 
 resource "qpid_binding" "bnd2" {
   depends_on = [qpid_queue.blah, qpid_exchange.my_exchange]
-  parents = ["test", "test"]
+  virtual_host_node = "test"
+  virtual_host = "test"
   binding_key = "bnd2"
   destination = "blah"
   exchange = "my_exchange"
   arguments = {
-          "x-filter-jms-selector": "b=2"
+          "x-filter-jms-selector" = "b=2"
   }
 }

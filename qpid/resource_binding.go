@@ -59,16 +59,18 @@ func resourceBinding() *schema.Resource {
 				Default: nil,
 			},
 
-			"parents": {
-				Type:        schema.TypeList,
-				Description: "Parents of Binding: <node>, <host>",
+			"virtual_host_node": {
+				Type:        schema.TypeString,
+				Description: "The name of Virtual Host Node",
 				Required:    true,
 				ForceNew:    true,
-				MaxItems:    2,
-				MinItems:    2,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+			},
+
+			"virtual_host": {
+				Type:        schema.TypeString,
+				Description: "The name of Virtual Host",
+				Required:    true,
+				ForceNew:    true,
 			},
 		},
 	}
@@ -118,21 +120,17 @@ func buildBinding(d *schema.ResourceData) (*Binding, error) {
 	bindingKey := d.Get("binding_key").(string)
 	destination := d.Get("destination").(string)
 	exchange := d.Get("exchange").(string)
+	node := d.Get("virtual_host_node").(string)
+	host := d.Get("virtual_host").(string)
 	arguments := d.Get("arguments").(map[string]interface{})
-	parentItems := d.Get("parents").([]interface{})
-	var parents = *convertToArrayOfStrings(&parentItems)
-
-	if len(parents) != 2 {
-		return &Binding{}, fmt.Errorf("unexpected exchange parents: %s", strings.Join(parents, "/"))
-	}
 	args := *convertToMapOfStrings(&arguments)
 	return &Binding{
 		bindingKey,
 		destination,
 		exchange,
 		args,
-		parents[0],
-		parents[1]}, nil
+		node,
+		host}, nil
 }
 
 func readBinding(d *schema.ResourceData, meta interface{}) error {
@@ -179,7 +177,12 @@ func readBinding(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	err = d.Set("parents", []interface{}{b.VirtualHostNode, b.VirtualHost})
+	err = d.Set("virtual_host_node", b.VirtualHostNode)
+	if err != nil {
+		return err
+	}
+
+	err = d.Set("virtual_host", b.VirtualHost)
 	if err != nil {
 		return err
 	}

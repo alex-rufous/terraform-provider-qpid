@@ -25,7 +25,7 @@ func resourceVirtualHost() *schema.Resource {
 				Required:    true,
 				ForceNew:    true,
 			},
-			"parent": {
+			"virtual_host_node": {
 				Type:        schema.TypeString,
 				Description: "The name of Virtual Host parent",
 				Required:    true,
@@ -297,7 +297,7 @@ func createVirtualHost(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	attributes := toVirtualHostAttributes(d)
-	parent := d.Get("parent").(string)
+	parent := d.Get("virtual_host_node").(string)
 	resp, err := client.CreateVirtualHost(parent, attributes)
 	if err != nil {
 		return err
@@ -326,7 +326,7 @@ func toVirtualHostAttributes(d *schema.ResourceData) *map[string]interface{} {
 	schemaMap := resourceVirtualHost().Schema
 	for key := range schemaMap {
 		value, exists := d.GetOk(key)
-		if key != "parent" && exists {
+		if key != "virtual_host_node" && exists {
 			if key == "node_auto_creation_policy" {
 				var val = value.(*schema.Set)
 				var items = val.List()
@@ -348,7 +348,7 @@ func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	parent := d.Get("parent").(string)
+	parent := d.Get("virtual_host_node").(string)
 
 	attributes, err := client.GetVirtualHost(parent, name)
 	if err != nil {
@@ -372,7 +372,7 @@ func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
 		}
 		value, attributeSet := (*attributes)[keyCamelCased]
 
-		if key != "parent" && (keySet || attributeSet) {
+		if key != "virtual_host_node" && (keySet || attributeSet) {
 
 			if key == "node_auto_creation_policy" {
 				val := value.([]interface{})
@@ -402,7 +402,7 @@ func existsVirtualHost(d *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	parent := d.Get("parent").(string)
+	parent := d.Get("virtual_host_node").(string)
 	attributes, err := client.GetVirtualHost(parent, name)
 	if err != nil {
 		return false, err
@@ -415,7 +415,7 @@ func deleteVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	parent := d.Get("parent").(string)
+	parent := d.Get("virtual_host_node").(string)
 
 	resp, err := client.DeleteVirtualHost(parent, name)
 	if err != nil {
@@ -432,7 +432,7 @@ func deleteVirtualHost(d *schema.ResourceData, meta interface{}) error {
 func updateVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	name := d.Get("name").(string)
-	parent := d.Get("parent").(string)
+	parent := d.Get("virtual_host_node").(string)
 	attributes := toVirtualHostAttributes(d)
 
 	resp, err := client.UpdateVirtualHost(parent, name, attributes)

@@ -46,14 +46,14 @@ func testAcceptanceExchangeCheck(rn string, virtualHostNodeName *string, virtual
 			return fmt.Errorf("exchange id not set")
 		}
 
-		nodeName, ok := rs.Primary.Attributes["parents.0"]
+		nodeName, ok := rs.Primary.Attributes["virtual_host_node"]
 		if !ok {
-			return fmt.Errorf("parents: node name is not set")
+			return fmt.Errorf("node name is not set")
 		}
 
-		hostName, ok := rs.Primary.Attributes["parents.1"]
+		hostName, ok := rs.Primary.Attributes["virtual_host"]
 		if !ok {
-			return fmt.Errorf("parents: host name is not set")
+			return fmt.Errorf("host name is not set")
 		}
 
 		client := testAcceptanceProvider.Meta().(*Client)
@@ -120,14 +120,15 @@ resource "qpid_virtual_host_node" "acceptance_test" {
 resource "qpid_virtual_host" "acceptance_test_host" {
     depends_on = [qpid_virtual_host_node.acceptance_test]
     name = "acceptance_test_host"
-    parent = "acceptance_test"
+    virtual_host_node = "acceptance_test"
     type = "BDB"
 }
 
 resource "qpid_exchange" "test_exchange" {
     name = "test_exchange"
     depends_on = [qpid_virtual_host.acceptance_test_host]
-    parents = ["acceptance_test", "acceptance_test_host"]
+    virtual_host_node = "acceptance_test"
+    virtual_host = "acceptance_test_host"
     type = "direct"
 }
 `
