@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -19,23 +20,39 @@ func TestAcceptanceBinding(t *testing.T) {
 		CheckDestroy: testAcceptanceBindingCheckDestroy(),
 		Steps: []resource.TestStep{
 			{
+				// test binding created from configuration
 				Config: testAcceptanceBindingConfigMinimal,
 				Check: testAcceptanceBindingCheck(
-					"qpid_binding.test_binding", binding,
+					"qpid_binding.test_binding", binding, &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{"x-filter-jms-selector": "foo='bar'"}, testNodeName, testHostName},
 				),
 			},
 			{
+				// test binding updated from configuration
+				Config: testAcceptanceBindingConfigArgumentsRemoved,
+				Check: testAcceptanceBindingCheck(
+					"qpid_binding.test_binding", binding, &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{}, testNodeName, testHostName},
+				),
+			},
+			{
+				// test broker side deleted binding is restored from configuration
 				PreConfig: dropBinding(testNodeName, testHostName, testExchangeName, testQueue, testBindingKey),
 				Config:    testAcceptanceBindingConfigMinimal,
 				Check: testAcceptanceBindingCheck(
-					"qpid_binding.test_binding", binding,
+					"qpid_binding.test_binding", binding, &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{"x-filter-jms-selector": "foo='bar'"}, testNodeName, testHostName},
+				),
+			},
+			{
+				// test binding is deleted after its deletion in configuration
+				Config: testBindingParents,
+				Check: testAcceptanceBindingDeleted(
+					"qpid_binding.test_binding", &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{}, testNodeName, testHostName},
 				),
 			},
 		},
 	})
 }
 
-func testAcceptanceBindingCheck(rn string, binding *Binding) resource.TestCheckFunc {
+func testAcceptanceBindingCheck(rn string, binding *Binding, expected *Binding) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[rn]
 		if !ok {
@@ -58,34 +75,38 @@ func testAcceptanceBindingCheck(rn string, binding *Binding) resource.TestCheckF
 		node := parts[0]
 		host := parts[1]
 
-		client := testAcceptanceProvider.Meta().(*Client)
-
-		bindings, err := client.getExchangeBindings(node, host, exch)
+		bnd, err := findBinding(node, host, exch, dest, key)
 		if err != nil {
-			return fmt.Errorf("error on getting queues: %s", err)
+			return fmt.Errorf("error on getting binding: %s", err)
 		}
 
-		for _, bnd := range *bindings {
-			bindingKey := bnd["bindingKey"]
-			bindingDestination := bnd["destination"]
-			if bindingKey != nil && bindingKey == key && bindingDestination != nil && bindingDestination == dest {
-				args := bnd["arguments"]
-				var arguments map[string]string
-				if args != nil {
-					i := args.(map[string]interface{})
-					arguments = *convertToMapOfStrings(&i)
-				}
-				binding = &Binding{bindingKey.(string),
-					bindingDestination.(string),
-					exch,
-					arguments,
-					node,
-					host}
-				return nil
-			}
+		if bnd == nil {
+			return fmt.Errorf("unable to find binding %s", rn)
 		}
 
-		return fmt.Errorf("unable to find binding %s", rn)
+		binding = bnd
+		if expected != nil && !reflect.DeepEqual(*binding, *expected) {
+			return fmt.Errorf("unexpected binding %s : expected %v, got %v", rn, binding, expected)
+		}
+		return nil
+	}
+}
+
+func testAcceptanceBindingDeleted(rn string, binding *Binding) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		_, ok := s.RootModule().Resources[rn]
+		if ok {
+			return fmt.Errorf("deleted resource found: %s", rn)
+		}
+
+		bnd, err := findBinding((*binding).VirtualHostNode, (*binding).VirtualHost, (*binding).Exchange, (*binding).Destination, (*binding).BindingKey)
+		if err != nil {
+			return fmt.Errorf("error on getting binding: %s", err)
+		}
+		if bnd != nil {
+			return fmt.Errorf("found deleted binding : %v", *binding)
+		}
+		return nil
 	}
 }
 
@@ -122,12 +143,17 @@ func dropBinding(nodeName string, hostName string, exchange string, queueName st
 	}
 }
 
+func findBinding(node string, host string, exchange string, destination string, bindingKey string) (*Binding, error) {
+	client := testAcceptanceProvider.Meta().(*Client)
+	return client.GetBinding(&Binding{bindingKey, destination, exchange, nil, node, host})
+}
+
 const testNodeName = "acceptance_test"
 const testHostName = "acceptance_test_host"
 const testExchangeName = "test_exchange"
 const testQueue = "test_queue"
 const testBindingKey = "binding-key"
-const testAcceptanceBindingConfigMinimal = `
+const testBindingParents = `
 resource "qpid_virtual_host_node" "acceptance_test" {
     name = "acceptance_test"
     type = "JSON"
@@ -156,7 +182,9 @@ resource "qpid_exchange" "test_exchange" {
     virtual_host = "acceptance_test_host"
     type = "direct"
 }
+`
 
+const testAcceptanceBindingConfigMinimal = testBindingParents + `
 resource "qpid_binding" "test_binding" {
     depends_on = [qpid_exchange.test_exchange, qpid_queue.test_queue]
     destination = "test_queue"
@@ -167,5 +195,16 @@ resource "qpid_binding" "test_binding" {
     arguments = {
           "x-filter-jms-selector" = "foo='bar'"
     }
+}
+`
+
+const testAcceptanceBindingConfigArgumentsRemoved = testBindingParents + `
+resource "qpid_binding" "test_binding" {
+    depends_on = [qpid_exchange.test_exchange, qpid_queue.test_queue]
+    destination = "test_queue"
+    exchange = "test_exchange"
+    binding_key = "binding-key"
+    virtual_host_node = "acceptance_test"
+    virtual_host = "acceptance_test_host"
 }
 `
