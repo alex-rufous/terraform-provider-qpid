@@ -3,7 +3,6 @@ package qpid
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
 	"net/http"
 )
 
@@ -163,23 +162,19 @@ func createExchange(d *schema.ResourceData, meta interface{}) error {
 }
 
 func toExchangeAttributes(d *schema.ResourceData) *map[string]interface{} {
-	attributes := make(map[string]interface{})
-	schemaMap := resourceExchange().Schema
-	for key := range schemaMap {
-		var value interface{}
-		value, exists := d.GetOk(key)
-		if key != "virtual_host_node" && key != "virtual_host" && exists {
-			if key == "alternate_binding" {
-				val, expected := value.([]interface{})
-				if expected && len(val) == 1 {
-					i := val[0].(map[string]interface{})
-					value = createMapWithKeysInCameCase(&i)
-				}
-			}
-			attributes[convertToCamelCase(key)] = value
+	attributes := schemaToAttributes(d, resourceExchange().Schema, "virtual_host_node", "virtual_host")
+	alternateBinding, alternateBindingSet := (*attributes)["alternateBinding"]
+	if alternateBindingSet && alternateBinding != nil {
+		val, expected := alternateBinding.([]interface{})
+		if expected && len(val) == 1 {
+			i := val[0].(map[string]interface{})
+			binding := createMapWithKeysInCameCase(&i)
+			(*attributes)["alternateBinding"] = binding
+		} else {
+			delete(*attributes, "alternateBinding")
 		}
 	}
-	return &attributes
+	return attributes
 }
 
 func readExchange(d *schema.ResourceData, meta interface{}) error {
@@ -209,11 +204,6 @@ func readExchange(d *schema.ResourceData, meta interface{}) error {
 		value, attributeSet := (*attributes)[keyCamelCased]
 
 		if key != "virtual_host_node" && key != "virtual_host" && (keySet || attributeSet) {
-			isString := false
-			if value != nil {
-				_, isString = value.(string)
-			}
-			log.Printf("exchange attribute: %s=%v, is string: %v", key, value, isString)
 
 			if key == "alternate_binding" {
 				val := value.(map[string]interface{})

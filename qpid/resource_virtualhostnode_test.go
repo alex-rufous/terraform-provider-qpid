@@ -9,23 +9,44 @@ import (
 )
 
 func TestAcceptanceVirtualHostNode(t *testing.T) {
-	var virtualHostNodeName string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAcceptancePreCheck(t) },
 		Providers:    testAcceptanceProviders,
-		CheckDestroy: testAcceptanceVirtualHostNodeCheckDestroy(virtualHostNodeName),
+		CheckDestroy: testAcceptanceVirtualHostNodeCheckDestroy(testAcceptanceVirtualHostNodeName),
 		Steps: []resource.TestStep{
 			{
+				// test new virtual host node creation from configuration
 				Config: testAcceptanceVirtualHostNodeConfigMinimal,
 				Check: testAcceptanceVirtualHostNodeCheck(
-					"qpid_virtual_host_node.acceptance_test", &virtualHostNodeName,
+					testAcceptanceVirtualHostNodeResource,
+					&map[string]interface{}{"name": testAcceptanceVirtualHostNodeName, "type": "JSON"},
 				),
 			},
 			{
-				PreConfig: dropVirtualHostNode("acceptance_test"),
+				// test virtual host node restoration from configuration after its deletion on broker side
+				PreConfig: dropVirtualHostNode(testAcceptanceVirtualHostNodeName),
 				Config:    testAcceptanceVirtualHostNodeConfigMinimal,
 				Check: testAcceptanceVirtualHostNodeCheck(
-					"qpid_virtual_host_node.acceptance_test", &virtualHostNodeName,
+					testAcceptanceVirtualHostNodeResource,
+					&map[string]interface{}{"name": testAcceptanceVirtualHostNodeName, "type": "JSON"},
+				),
+			},
+			{
+				// test virtual host node update
+				Config: getVirtualHostNodeConfigurationWithAttributes(&map[string]string{"context": "{\"foo\":\"bar\"}"}),
+				Check: testAcceptanceVirtualHostNodeCheck(
+					testAcceptanceVirtualHostNodeResource,
+					&map[string]interface{}{"name": testAcceptanceVirtualHostNodeName, "type": "JSON", "context": map[string]interface{}{"foo": "bar"}},
+				),
+			},
+			{
+				// test virtual host node attribute removal
+				Config: testAcceptanceVirtualHostNodeConfigMinimal,
+				Check: testAcceptanceVirtualHostNodeCheck(
+					testAcceptanceVirtualHostNodeResource,
+					&map[string]interface{}{"name": testAcceptanceVirtualHostNodeName, "type": "JSON"},
+					"context",
 				),
 			},
 		},
@@ -47,7 +68,7 @@ func dropVirtualHostNode(nodeName string) func() {
 	}
 }
 
-func testAcceptanceVirtualHostNodeCheck(rn string, name *string) resource.TestCheckFunc {
+func testAcceptanceVirtualHostNodeCheck(rn string, expectedAttributes *map[string]interface{}, removed ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[rn]
 		if !ok {
@@ -66,8 +87,7 @@ func testAcceptanceVirtualHostNodeCheck(rn string, name *string) resource.TestCh
 
 		for _, node := range *nodes {
 			if node["id"] == rs.Primary.ID {
-				*name = node["name"].(string)
-				return nil
+				return assertExpectedAndRemovedAttributes(&node, expectedAttributes, removed)
 			}
 		}
 
@@ -93,9 +113,25 @@ func testAcceptanceVirtualHostNodeCheckDestroy(name string) resource.TestCheckFu
 	}
 }
 
+const testAcceptanceVirtualHostNodeResourceName = "qpid_virtual_host_node"
+const testAcceptanceVirtualHostNodeName = "acceptance_test"
+const testAcceptanceVirtualHostNodeResource = testAcceptanceVirtualHostNodeResourceName + "." + testAcceptanceVirtualHostNodeName
+
 const testAcceptanceVirtualHostNodeConfigMinimal = `
-resource "qpid_virtual_host_node" "acceptance_test" {
-    name = "acceptance_test"
+resource "` + testAcceptanceVirtualHostNodeResourceName + `" "` + testAcceptanceVirtualHostNodeName + `" {
+    name = "` + testAcceptanceVirtualHostNodeName + `"
     type = "JSON"
-    virtual_host_initial_configuration = "{\"type\":\"BDB\"}"
 }`
+
+func getVirtualHostNodeConfigurationWithAttributes(entries *map[string]string) string {
+	config := `resource "` + testAcceptanceVirtualHostNodeResourceName + `" "` + testAcceptanceVirtualHostNodeName + `" {
+		name = "` + testAcceptanceVirtualHostNodeName + `"
+		type = "JSON"
+	`
+	for k, v := range *entries {
+		config += fmt.Sprintf("    %s=%s\n", k, v)
+	}
+	config += `}
+`
+	return config
+}

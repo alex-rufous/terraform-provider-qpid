@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/structure"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"log"
 	"net/http"
 )
 
@@ -261,13 +260,14 @@ func resourceQueue() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: false,
-				Default:  false,
+				Default:  nil,
 			},
 
 			"maximum_queue_depth_bytes": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: false,
+				Default:  nil,
 			},
 
 			"overflow_policy": {
@@ -362,23 +362,19 @@ func createQueue(d *schema.ResourceData, meta interface{}) error {
 }
 
 func toQueueAttributes(d *schema.ResourceData) *map[string]interface{} {
-	attributes := make(map[string]interface{})
-	schemaMap := resourceQueue().Schema
-	for key := range schemaMap {
-		var value interface{}
-		value, exists := d.GetOk(key)
-		if key != "virtual_host_node" && key != "virtual_host" && exists {
-			if key == "alternate_binding" {
-				val, expected := value.([]interface{})
-				if expected && len(val) == 1 {
-					i := val[0].(map[string]interface{})
-					value = createMapWithKeysInCameCase(&i)
-				}
-			}
-			attributes[convertToCamelCase(key)] = value
+	attributes := schemaToAttributes(d, resourceQueue().Schema, "virtual_host_node", "virtual_host")
+	alternateBinding, alternateBindingSet := (*attributes)["alternateBinding"]
+	if alternateBindingSet && alternateBinding != nil {
+		val, expected := alternateBinding.([]interface{})
+		if expected && len(val) == 1 {
+			i := val[0].(map[string]interface{})
+			binding := createMapWithKeysInCameCase(&i)
+			(*attributes)["alternateBinding"] = binding
+		} else {
+			delete(*attributes, "alternateBinding")
 		}
 	}
-	return &attributes
+	return attributes
 }
 
 func readQueue(d *schema.ResourceData, meta interface{}) error {
@@ -413,7 +409,6 @@ func readQueue(d *schema.ResourceData, meta interface{}) error {
 			if value != nil {
 				_, isString = value.(string)
 			}
-			log.Printf("queue attribute: %s=%v, is string: %v", key, value, isString)
 
 			if key == "alternate_binding" {
 				val := value.(map[string]interface{})

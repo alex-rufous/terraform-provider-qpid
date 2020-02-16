@@ -11,9 +11,6 @@ import (
 )
 
 func TestAcceptanceBinding(t *testing.T) {
-
-	var binding *Binding
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAcceptancePreCheck(t) },
 		Providers:    testAcceptanceProviders,
@@ -23,36 +20,60 @@ func TestAcceptanceBinding(t *testing.T) {
 				// test binding created from configuration
 				Config: testAcceptanceBindingConfigMinimal,
 				Check: testAcceptanceBindingCheck(
-					"qpid_binding.test_binding", binding, &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{"x-filter-jms-selector": "foo='bar'"}, testNodeName, testHostName},
+					testAcceptanceBindingResource,
+					&Binding{testBindingKey,
+						testAcceptanceQueueName,
+						testAcceptanceExchangeName,
+						map[string]string{"x-filter-jms-selector": "foo='bar'"},
+						testAcceptanceVirtualHostNodeName,
+						testAcceptanceVirtualHostName},
 				),
 			},
 			{
 				// test binding updated from configuration
 				Config: testAcceptanceBindingConfigArgumentsRemoved,
 				Check: testAcceptanceBindingCheck(
-					"qpid_binding.test_binding", binding, &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{}, testNodeName, testHostName},
+					testAcceptanceBindingResource,
+					&Binding{testBindingKey,
+						testAcceptanceQueueName,
+						testAcceptanceExchangeName,
+						map[string]string{},
+						testAcceptanceVirtualHostNodeName,
+						testAcceptanceVirtualHostName},
 				),
 			},
 			{
 				// test broker side deleted binding is restored from configuration
-				PreConfig: dropBinding(testNodeName, testHostName, testExchangeName, testQueue, testBindingKey),
+				PreConfig: dropBinding(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceExchangeName, testAcceptanceQueueName, testBindingKey),
 				Config:    testAcceptanceBindingConfigMinimal,
 				Check: testAcceptanceBindingCheck(
-					"qpid_binding.test_binding", binding, &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{"x-filter-jms-selector": "foo='bar'"}, testNodeName, testHostName},
+					testAcceptanceBindingResource,
+					&Binding{testBindingKey,
+						testAcceptanceQueueName,
+						testAcceptanceExchangeName,
+						map[string]string{"x-filter-jms-selector": "foo='bar'"},
+						testAcceptanceVirtualHostNodeName,
+						testAcceptanceVirtualHostName},
 				),
 			},
 			{
 				// test binding is deleted after its deletion in configuration
 				Config: testBindingParents,
 				Check: testAcceptanceBindingDeleted(
-					"qpid_binding.test_binding", &Binding{testBindingKey, testQueue, testExchangeName, map[string]string{}, testNodeName, testHostName},
+					testAcceptanceBindingResource,
+					&Binding{testBindingKey,
+						testAcceptanceQueueName,
+						testAcceptanceExchangeName,
+						map[string]string{},
+						testAcceptanceVirtualHostNodeName,
+						testAcceptanceVirtualHostName},
 				),
 			},
 		},
 	})
 }
 
-func testAcceptanceBindingCheck(rn string, binding *Binding, expected *Binding) resource.TestCheckFunc {
+func testAcceptanceBindingCheck(rn string, expected *Binding) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[rn]
 		if !ok {
@@ -84,9 +105,8 @@ func testAcceptanceBindingCheck(rn string, binding *Binding, expected *Binding) 
 			return fmt.Errorf("unable to find binding %s", rn)
 		}
 
-		binding = bnd
-		if expected != nil && !reflect.DeepEqual(*binding, *expected) {
-			return fmt.Errorf("unexpected binding %s : expected %v, got %v", rn, binding, expected)
+		if expected != nil && !reflect.DeepEqual(*bnd, *expected) {
+			return fmt.Errorf("unexpected binding %s : expected %v, got %v", rn, bnd, expected)
 		}
 		return nil
 	}
@@ -113,14 +133,14 @@ func testAcceptanceBindingDeleted(rn string, binding *Binding) resource.TestChec
 func testAcceptanceBindingCheckDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAcceptanceProvider.Meta().(*Client)
-		bindings, err := client.getExchangeBindings(testNodeName, testHostName, testExchangeName)
+		bindings, err := client.getExchangeBindings(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceExchangeName)
 		if err != nil {
 			return fmt.Errorf("error on getting bindings: %s", err)
 		}
 
 		for _, bnd := range *bindings {
-			if bnd["bindingKey"] == testBindingKey && bnd["destination"] == testQueue {
-				return fmt.Errorf("binding %s/%s/%s/%s/%s still exist", testNodeName, testHostName, testExchangeName, testQueue, testBindingKey)
+			if bnd["bindingKey"] == testBindingKey && bnd["destination"] == testAcceptanceQueueName {
+				return fmt.Errorf("binding %s/%s/%s/%s/%s still exist", testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceExchangeName, testAcceptanceQueueName, testBindingKey)
 			}
 		}
 
@@ -148,50 +168,20 @@ func findBinding(node string, host string, exchange string, destination string, 
 	return client.GetBinding(&Binding{bindingKey, destination, exchange, nil, node, host})
 }
 
-const testNodeName = "acceptance_test"
-const testHostName = "acceptance_test_host"
-const testExchangeName = "test_exchange"
-const testQueue = "test_queue"
+const testAcceptanceBindingName = "test_binding"
+const testAcceptanceBindingResourceName = "qpid_binding"
+const testAcceptanceBindingResource = "qpid_binding.test_binding"
 const testBindingKey = "binding-key"
-const testBindingParents = `
-resource "qpid_virtual_host_node" "acceptance_test" {
-    name = "acceptance_test"
-    type = "JSON"
-    virtual_host_initial_configuration = "{}"
-}
-
-resource "qpid_virtual_host" "acceptance_test_host" {
-    depends_on = [qpid_virtual_host_node.acceptance_test]
-    name = "acceptance_test_host"
-    virtual_host_node = "acceptance_test"
-    type = "BDB"
-}
-
-resource "qpid_queue" "test_queue" {
-    name = "test_queue"
-    depends_on = [qpid_virtual_host.acceptance_test_host]
-    virtual_host_node = "acceptance_test"
-    virtual_host = "acceptance_test_host"
-    type = "standard"
-}
-
-resource "qpid_exchange" "test_exchange" {
-    name = "test_exchange"
-    depends_on = [qpid_virtual_host.acceptance_test_host]
-    virtual_host_node = "acceptance_test"
-    virtual_host = "acceptance_test_host"
-    type = "direct"
-}
-`
+const testBindingParents = testAcceptanceExchangeConfigMinimal + testQueueConfiguration
 
 const testAcceptanceBindingConfigMinimal = testBindingParents + `
-resource "qpid_binding" "test_binding" {
-    depends_on = [qpid_exchange.test_exchange, qpid_queue.test_queue]
-    destination = "test_queue"
-    exchange = "test_exchange"
-    binding_key = "binding-key"
-    virtual_host_node = "acceptance_test"
-    virtual_host = "acceptance_test_host"
+resource "` + testAcceptanceBindingResourceName + `" "` + testAcceptanceBindingName + `" {
+    depends_on = [` + testAcceptanceExchangeResource + `, ` + testAcceptanceQueueResource + `]
+    destination = "` + testAcceptanceQueueName + `"
+    exchange = "` + testAcceptanceExchangeName + `"
+    binding_key = "` + testBindingKey + `"
+    virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
     arguments = {
           "x-filter-jms-selector" = "foo='bar'"
     }
@@ -199,12 +189,12 @@ resource "qpid_binding" "test_binding" {
 `
 
 const testAcceptanceBindingConfigArgumentsRemoved = testBindingParents + `
-resource "qpid_binding" "test_binding" {
-    depends_on = [qpid_exchange.test_exchange, qpid_queue.test_queue]
-    destination = "test_queue"
-    exchange = "test_exchange"
-    binding_key = "binding-key"
-    virtual_host_node = "acceptance_test"
-    virtual_host = "acceptance_test_host"
+resource "` + testAcceptanceBindingResourceName + `" "` + testAcceptanceBindingName + `" {
+    depends_on = [` + testAcceptanceExchangeResource + `, ` + testAcceptanceQueueResource + `]
+    destination = "` + testAcceptanceQueueName + `"
+    exchange = "` + testAcceptanceExchangeName + `"
+    binding_key = "` + testBindingKey + `"
+    virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
 }
 `

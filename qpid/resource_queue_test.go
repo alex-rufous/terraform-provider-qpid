@@ -9,32 +9,77 @@ import (
 )
 
 func TestAcceptanceQueue(t *testing.T) {
-	var virtualHostNodeName string
-	var virtualHostName string
-	var queueName string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAcceptancePreCheck(t) },
 		Providers:    testAcceptanceProviders,
-		CheckDestroy: testAcceptanceQueueCheckDestroy(virtualHostNodeName, virtualHostName, queueName),
+		CheckDestroy: testAcceptanceQueueCheckDestroy(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceQueueName),
 		Steps: []resource.TestStep{
 			{
+				// test new queue creation from configuration
 				Config: testAcceptanceQueueConfigMinimal,
 				Check: testAcceptanceQueueCheck(
-					"qpid_queue.test_queue", &virtualHostNodeName, &virtualHostName, &queueName,
+					testAcceptanceQueueResource, &map[string]interface{}{"name": testAcceptanceQueueName, "type": "standard"},
 				),
 			},
 			{
-				PreConfig: dropQueue("acceptance_test", "acceptance_test_host", "test_queue"),
+				// test queue restoration from configuration after its deletion on broker side
+				PreConfig: dropQueue(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceQueueName),
 				Config:    testAcceptanceQueueConfigMinimal,
 				Check: testAcceptanceQueueCheck(
-					"qpid_queue.test_queue", &virtualHostNodeName, &virtualHostName, &queueName,
+					testAcceptanceQueueResource, &map[string]interface{}{"name": testAcceptanceQueueName, "type": "standard"},
+				),
+			},
+			{
+				// update queue attributes
+				Config: getQueueConfigurationWithAttributes(&map[string]string{"minimum_message_ttl": "1000", "maximum_message_ttl": "99999"}),
+				Check: testAcceptanceQueueCheck(
+					testAcceptanceQueueResource, &map[string]interface{}{"minimumMessageTtl": 1000.0, "maximumMessageTtl": 99999.0},
+				),
+			},
+			{
+				// update with alternate binding
+				Config: testAcceptanceVirtualHostConfigMinimal + testAcceptanceQueue2 + `
+resource "` + testAcceptanceQueueResourceName + `" "` + testAcceptanceQueueName + `" {
+    name = "` + testAcceptanceQueueName + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `, ` + testAcceptanceQueueResource2 + `]
+	virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
+    type = "standard"
+    alternate_binding {
+		destination = "` + testAcceptanceQueueName2 + `"
+        attributes = {
+						"x-filter-jms-selector"= "id>0"
+        }
+    }
+}
+`,
+				Check: testAcceptanceQueueCheck(
+					testAcceptanceQueueResource, &map[string]interface{}{
+						"alternateBinding": map[string]interface{}{
+							"destination": testAcceptanceQueueName2,
+							"attributes": map[string]interface{}{
+								"x-filter-jms-selector": "id>0",
+							}}},
+					"minimumMessageTtl",
+					"maximumMessageTtl",
+				),
+			},
+
+			{
+				// update with removed attributes
+				Config: getQueueConfigurationWithAttributes(&map[string]string{"message_durability": "\"NEVER\""}) + testAcceptanceQueue2,
+				Check: testAcceptanceQueueCheck(
+					testAcceptanceQueueResource,
+					&map[string]interface{}{"messageDurability": "NEVER"},
+					"alternateBinding",
 				),
 			},
 		},
 	})
 }
 
-func testAcceptanceQueueCheck(rn string, virtualHostNodeName *string, virtualHostName *string, queueName *string) resource.TestCheckFunc {
+func testAcceptanceQueueCheck(rn string, expectedAttributes *map[string]interface{}, removed ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[rn]
 		if !ok {
@@ -64,10 +109,7 @@ func testAcceptanceQueueCheck(rn string, virtualHostNodeName *string, virtualHos
 
 		for _, queue := range *queues {
 			if queue["id"] != nil && queue["id"] == rs.Primary.ID {
-				*queueName = queue["name"].(string)
-				*virtualHostNodeName = nodeName
-				*virtualHostName = hostName
-				return nil
+				return assertExpectedAndRemovedAttributes(&queue, expectedAttributes, removed)
 			}
 		}
 
@@ -109,25 +151,44 @@ func dropQueue(nodeName string, hostName string, queueName string) func() {
 	}
 }
 
-const testAcceptanceQueueConfigMinimal = `
-resource "qpid_virtual_host_node" "acceptance_test" {
-    name = "acceptance_test"
-    type = "JSON"
-    virtual_host_initial_configuration = "{}"
-}
-
-resource "qpid_virtual_host" "acceptance_test_host" {
-    depends_on = [qpid_virtual_host_node.acceptance_test]
-    name = "acceptance_test_host"
-    virtual_host_node = "acceptance_test"
-    type = "BDB"
-}
-
-resource "qpid_queue" "test_queue" {
-    name = "test_queue"
-    depends_on = [qpid_virtual_host.acceptance_test_host]
-	virtual_host_node = "acceptance_test"
-    virtual_host = "acceptance_test_host"
+const testAcceptanceQueueName = "test_queue"
+const testAcceptanceQueueName2 = "test_queue2"
+const testAcceptanceQueueResourceName = "qpid_queue"
+const testAcceptanceQueueResource = testAcceptanceQueueResourceName + "." + testAcceptanceQueueName
+const testAcceptanceQueueResource2 = testAcceptanceQueueResourceName + "." + testAcceptanceQueueName2
+const testQueueConfiguration = `
+resource "` + testAcceptanceQueueResourceName + `" "` + testAcceptanceQueueName + `" {
+    name = "` + testAcceptanceQueueName + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `]
+	virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
     type = "standard"
 }
 `
+const testAcceptanceQueueConfigMinimal = testAcceptanceVirtualHostConfigMinimal + testQueueConfiguration
+const testAcceptanceQueue2 = `
+resource "` + testAcceptanceQueueResourceName + `" "` + testAcceptanceQueueName2 + `" {
+    name = "` + testAcceptanceQueueName2 + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `]
+	virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
+    type = "standard"
+}
+`
+
+func getQueueConfigurationWithAttributes(entries *map[string]string) string {
+	config := testAcceptanceVirtualHostConfigMinimal + `
+resource "` + testAcceptanceQueueResourceName + `" "` + testAcceptanceQueueName + `" {
+    name = "` + testAcceptanceQueueName + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `]
+	virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
+    type = "standard"
+`
+	for k, v := range *entries {
+		config += fmt.Sprintf("    %s=%s\n", k, v)
+	}
+	config += `}
+`
+	return config
+}

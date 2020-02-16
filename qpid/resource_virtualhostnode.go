@@ -253,15 +253,7 @@ func createVirtualHostNode(d *schema.ResourceData, meta interface{}) error {
 }
 
 func toVirtualHostNodeAttributes(d *schema.ResourceData) *map[string]interface{} {
-	attributes := make(map[string]interface{})
-	schemaMap := resourceVirtualHostNode().Schema
-	for key := range schemaMap {
-		value, exists := d.GetOk(key)
-		if exists {
-			attributes[convertToCamelCase(key)] = value
-		}
-	}
-	return &attributes
+	return schemaToAttributes(d, resourceVirtualHostNode().Schema)
 }
 
 func readVirtualHostNode(d *schema.ResourceData, meta interface{}) error {

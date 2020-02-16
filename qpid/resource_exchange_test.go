@@ -10,32 +10,65 @@ import (
 )
 
 func TestAcceptanceExchange(t *testing.T) {
-	var virtualHostNodeName string
-	var virtualHostName string
-	var exchangeName string
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAcceptancePreCheck(t) },
 		Providers:    testAcceptanceProviders,
-		CheckDestroy: testAcceptanceExchangeCheckDestroy(virtualHostNodeName, virtualHostName, exchangeName),
+		CheckDestroy: testAcceptanceExchangeCheckDestroy(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceExchangeName),
 		Steps: []resource.TestStep{
 			{
 				Config: testAcceptanceExchangeConfigMinimal,
 				Check: testAcceptanceExchangeCheck(
-					"qpid_exchange.test_exchange", &virtualHostNodeName, &virtualHostName, &exchangeName,
+					testAcceptanceExchangeResource, &map[string]interface{}{"name": testAcceptanceExchangeName, "type": "direct"},
 				),
 			},
 			{
-				PreConfig: dropExchange("acceptance_test", "acceptance_test_host", "test_exchange"),
+				PreConfig: dropExchange(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName, testAcceptanceExchangeName),
 				Config:    testAcceptanceExchangeConfigMinimal,
 				Check: testAcceptanceExchangeCheck(
-					"qpid_exchange.test_exchange", &virtualHostNodeName, &virtualHostName, &exchangeName,
+					testAcceptanceExchangeResource, &map[string]interface{}{"name": testAcceptanceExchangeName, "type": "direct"},
+				),
+			},
+			{
+				// update with alternate binding
+				Config: testAcceptanceVirtualHostConfigMinimal + testAcceptanceQueue2 + `
+resource "` + testAcceptanceExchangeResourceName + `" "` + testAcceptanceExchangeName + `" {
+    name = "` + testAcceptanceExchangeName + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `, ` + testAcceptanceQueueResource2 + `]
+	virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
+    type = "direct"
+    alternate_binding {
+		destination = "` + testAcceptanceQueueName2 + `"
+        attributes = {
+						"x-filter-jms-selector"= "id>0"
+        }
+    }
+}
+`,
+				Check: testAcceptanceExchangeCheck(
+					testAcceptanceExchangeResource, &map[string]interface{}{
+						"alternateBinding": map[string]interface{}{
+							"destination": testAcceptanceQueueName2,
+							"attributes": map[string]interface{}{
+								"x-filter-jms-selector": "id>0",
+							}}},
+				),
+			},
+
+			{
+				// update with removed attributes
+				Config: getExchangeConfigurationWithAttributes(&map[string]string{"unroutable_message_behaviour": "\"REJECT\""}) + testAcceptanceQueue2,
+				Check: testAcceptanceExchangeCheck(
+					testAcceptanceExchangeResource,
+					&map[string]interface{}{"unroutableMessageBehaviour": "REJECT"},
+					"alternateBinding",
 				),
 			},
 		},
 	})
 }
 
-func testAcceptanceExchangeCheck(rn string, virtualHostNodeName *string, virtualHostName *string, exchangeName *string) resource.TestCheckFunc {
+func testAcceptanceExchangeCheck(rn string, expectedAttributes *map[string]interface{}, removed ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[rn]
 		if !ok {
@@ -65,10 +98,7 @@ func testAcceptanceExchangeCheck(rn string, virtualHostNodeName *string, virtual
 
 		for _, exchange := range *exchanges {
 			if exchange["id"] == rs.Primary.ID {
-				*exchangeName = exchange["name"].(string)
-				*virtualHostNodeName = nodeName
-				*virtualHostName = hostName
-				return nil
+				return assertExpectedAndRemovedAttributes(&exchange, expectedAttributes, removed)
 			}
 		}
 
@@ -110,25 +140,33 @@ func dropExchange(nodeName string, hostName string, exchangeName string) func() 
 	}
 }
 
-const testAcceptanceExchangeConfigMinimal = `
-resource "qpid_virtual_host_node" "acceptance_test" {
-    name = "acceptance_test"
-    type = "JSON"
-    virtual_host_initial_configuration = "{}"
-}
+const testAcceptanceExchangeName = "test_exchange"
+const testAcceptanceExchangeResourceName = "qpid_exchange"
+const testAcceptanceExchangeResource = testAcceptanceExchangeResourceName + "." + testAcceptanceExchangeName
+const testAcceptanceExchangeConfigMinimal = testAcceptanceVirtualHostConfigMinimal + `
 
-resource "qpid_virtual_host" "acceptance_test_host" {
-    depends_on = [qpid_virtual_host_node.acceptance_test]
-    name = "acceptance_test_host"
-    virtual_host_node = "acceptance_test"
-    type = "BDB"
-}
-
-resource "qpid_exchange" "test_exchange" {
-    name = "test_exchange"
-    depends_on = [qpid_virtual_host.acceptance_test_host]
-    virtual_host_node = "acceptance_test"
-    virtual_host = "acceptance_test_host"
+resource "` + testAcceptanceExchangeResourceName + `" "` + testAcceptanceExchangeName + `" {
+    name = "` + testAcceptanceExchangeName + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `]
+    virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
     type = "direct"
 }
 `
+
+func getExchangeConfigurationWithAttributes(entries *map[string]string) string {
+	config := testAcceptanceVirtualHostConfigMinimal + `
+resource "` + testAcceptanceExchangeResourceName + `" "` + testAcceptanceExchangeName + `" {
+    name = "` + testAcceptanceExchangeName + `"
+    depends_on = [` + testAcceptanceVirtualHostResource + `]
+	virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    virtual_host = "` + testAcceptanceVirtualHostName + `"
+    type = "direct"
+`
+	for k, v := range *entries {
+		config += fmt.Sprintf("    %s=%s\n", k, v)
+	}
+	config += "}\n"
+
+	return config
+}

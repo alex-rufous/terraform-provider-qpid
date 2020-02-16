@@ -9,31 +9,70 @@ import (
 )
 
 func TestAcceptanceVirtualHost(t *testing.T) {
-	var virtualHostNodeName string
-	var virtualHostName string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAcceptancePreCheck(t) },
 		Providers:    testAcceptanceProviders,
-		CheckDestroy: testAcceptanceVirtualHostCheckDestroy(virtualHostNodeName, virtualHostName),
+		CheckDestroy: testAcceptanceVirtualHostCheckDestroy(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName),
 		Steps: []resource.TestStep{
 			{
 				Config: testAcceptanceVirtualHostConfigMinimal,
 				Check: testAcceptanceVirtualHostCheck(
-					"qpid_virtual_host.acceptance_test_host", &virtualHostNodeName, &virtualHostName,
+					testAcceptanceVirtualHostResource,
+					&map[string]interface{}{"name": testAcceptanceVirtualHostName, "type": "BDB"},
 				),
 			},
 			{
-				PreConfig: dropVirtualHost("acceptance_test", "acceptance_test_host"),
+				PreConfig: dropVirtualHost(testAcceptanceVirtualHostNodeName, testAcceptanceVirtualHostName),
 				Config:    testAcceptanceVirtualHostConfigMinimal,
 				Check: testAcceptanceVirtualHostCheck(
-					"qpid_virtual_host.acceptance_test_host", &virtualHostNodeName, &virtualHostName,
+					testAcceptanceVirtualHostResource,
+					&map[string]interface{}{"name": testAcceptanceVirtualHostName, "type": "BDB"},
+				),
+			},
+
+			{
+				Config: testAcceptanceVirtualHostParent + `
+
+resource "` + testAcceptanceVirtualHostResourceName + `" "` + testAcceptanceVirtualHostName + `" {
+    depends_on = [` + testAcceptanceVirtualHostNodeResource + `]
+    name = "` + testAcceptanceVirtualHostName + `"
+    virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    type = "BDB"
+
+    node_auto_creation_policy {
+                                   pattern = ".*"
+                                   created_on_publish = true
+                                   created_on_consume = true
+                                   node_type = "Queue"
+                                   attributes = {}
+                              }
+}`,
+				Check: testAcceptanceVirtualHostCheck(
+					testAcceptanceVirtualHostResource,
+					&map[string]interface{}{"nodeAutoCreationPolicies": []interface{}{
+						map[string]interface{}{
+							"pattern":          ".*",
+							"createdOnPublish": true,
+							"createdOnConsume": true,
+							"nodeType":         "Queue",
+							"attributes":       map[string]interface{}{}}}},
+				),
+			},
+
+			{
+				Config: getVirtualHostConfigurationWithAttributes(&map[string]string{"store_overfull_size": "100000"}),
+				Check: testAcceptanceVirtualHostCheck(
+					testAcceptanceVirtualHostResource,
+					&map[string]interface{}{"storeOverfullSize": 100000.0},
+					"nodeAutoCreationPolicies",
 				),
 			},
 		},
 	})
 }
 
-func testAcceptanceVirtualHostCheck(rn string, virtualHostNodeName *string, virtualHostName *string) resource.TestCheckFunc {
+func testAcceptanceVirtualHostCheck(rn string, expectedAttributes *map[string]interface{}, removed ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[rn]
 		if !ok {
@@ -58,9 +97,7 @@ func testAcceptanceVirtualHostCheck(rn string, virtualHostNodeName *string, virt
 
 		for _, host := range *hosts {
 			if host["id"] == rs.Primary.ID {
-				*virtualHostName = host["name"].(string)
-				*virtualHostNodeName = nodeName
-				return nil
+				return assertExpectedAndRemovedAttributes(&host, expectedAttributes, removed)
 			}
 		}
 
@@ -102,23 +139,37 @@ func dropVirtualHost(nodeName string, hostName string) func() {
 	}
 }
 
-const testAcceptanceVirtualHostConfigMinimal = `
-resource "qpid_virtual_host_node" "acceptance_test" {
-    name = "acceptance_test"
+const testAcceptanceVirtualHostName = "acceptance_test_host"
+const testAcceptanceVirtualHostResourceName = "qpid_virtual_host"
+const testAcceptanceVirtualHostResource = testAcceptanceVirtualHostResourceName + "." + testAcceptanceVirtualHostName
+
+const testAcceptanceVirtualHostParent = `
+resource "` + testAcceptanceVirtualHostNodeResourceName + `" "` + testAcceptanceVirtualHostNodeName + `" {
+    name = "` + testAcceptanceVirtualHostNodeName + `"
     type = "JSON"
     virtual_host_initial_configuration = "{}"
 }
-
-resource "qpid_virtual_host" "acceptance_test_host" {
-    depends_on = [qpid_virtual_host_node.acceptance_test]
-    name = "acceptance_test_host"
-    virtual_host_node = "acceptance_test"
+`
+const testAcceptanceVirtualHostConfigMinimal = testAcceptanceVirtualHostParent + `
+resource "` + testAcceptanceVirtualHostResourceName + `" "` + testAcceptanceVirtualHostName + `" {
+    depends_on = [` + testAcceptanceVirtualHostNodeResource + `]
+    name = "` + testAcceptanceVirtualHostName + `"
+    virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
     type = "BDB"
-    node_auto_creation_policy {
-                                   pattern = ".*"
-                                   created_on_publish = true
-                                   created_on_consume = true
-                                   node_type = "Queue"
-                                   attributes = {}
-                              }
 }`
+
+func getVirtualHostConfigurationWithAttributes(entries *map[string]string) string {
+	config := testAcceptanceVirtualHostParent + `
+resource "` + testAcceptanceVirtualHostResourceName + `" "` + testAcceptanceVirtualHostName + `" {
+    depends_on = [` + testAcceptanceVirtualHostNodeResource + `]
+    name = "` + testAcceptanceVirtualHostName + `"
+    virtual_host_node = "` + testAcceptanceVirtualHostNodeName + `"
+    type = "BDB"
+`
+	for k, v := range *entries {
+		config += fmt.Sprintf("    %s=%s\n", k, v)
+	}
+	config += `}
+`
+	return config
+}

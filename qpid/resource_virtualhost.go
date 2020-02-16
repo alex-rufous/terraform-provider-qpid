@@ -322,25 +322,28 @@ func createVirtualHost(d *schema.ResourceData, meta interface{}) error {
 }
 
 func toVirtualHostAttributes(d *schema.ResourceData) *map[string]interface{} {
-	attributes := make(map[string]interface{})
-	schemaMap := resourceVirtualHost().Schema
-	for key := range schemaMap {
-		value, exists := d.GetOk(key)
-		if key != "virtual_host_node" && exists {
-			if key == "node_auto_creation_policy" {
-				var val = value.(*schema.Set)
-				var items = val.List()
-				for i, v := range items {
-					p := v.(map[string]interface{})
-					items[i] = *createMapWithKeysInCameCase(&p)
-				}
-				attributes["nodeAutoCreationPolicies"] = items
-			} else {
-				attributes[convertToCamelCase(key)] = value
+
+	attributes := schemaToAttributes(d, resourceVirtualHost().Schema, "virtual_host_node", "node_auto_creation_policy")
+
+	value, exists := d.GetOk("node_auto_creation_policy")
+	if exists {
+		var val, expected = value.(*schema.Set)
+		if expected && val != nil {
+			var items = val.List()
+			for i, v := range items {
+				p := v.(map[string]interface{})
+				items[i] = *createMapWithKeysInCameCase(&p)
 			}
+			(*attributes)["nodeAutoCreationPolicies"] = items
+		}
+	} else {
+		oldValue, newValue := d.GetChange("node_auto_creation_policy")
+		if fmt.Sprintf("%v", oldValue) != fmt.Sprintf("%v", newValue) {
+			(*attributes)["nodeAutoCreationPolicies"] = nil
 		}
 	}
-	return &attributes
+
+	return attributes
 }
 
 func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
@@ -374,7 +377,7 @@ func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
 
 		if key != "virtual_host_node" && (keySet || attributeSet) {
 
-			if key == "node_auto_creation_policy" {
+			if key == "node_auto_creation_policy" && value != nil {
 				val := value.([]interface{})
 				s := d.Get(key).(*schema.Set)
 				if s != nil {

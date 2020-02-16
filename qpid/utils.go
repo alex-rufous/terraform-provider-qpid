@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"unicode"
@@ -180,4 +181,66 @@ func getErrorResponse(res *http.Response) (*map[string]interface{}, error) {
 		err = fmt.Errorf("error : %s", rme["message"])
 	}
 	return &rme, err
+}
+
+func schemaToAttributes(d *schema.ResourceData, schemaMap map[string]*schema.Schema, exclude ...string) *map[string]interface{} {
+	attributes := make(map[string]interface{})
+	excludes := arrayOfStringsToMap(exclude)
+	for key := range schemaMap {
+		if _, excluded := excludes[key]; excluded {
+			continue
+		}
+		value, exists := d.GetOk(key)
+		if exists {
+			attributes[convertToCamelCase(key)] = value
+		} else {
+			oldValue, newValue := d.GetChange(key)
+			if fmt.Sprintf("%v", oldValue) != fmt.Sprintf("%v", newValue) {
+				attributes[convertToCamelCase(key)] = nil
+			}
+		}
+	}
+	return &attributes
+}
+
+func arrayOfStringsToMap(slice []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+
+	return set
+}
+
+func containsExpectedAttributes(actual *map[string]interface{}, expected *map[string]interface{}) bool {
+	for k, v := range *expected {
+		if val, ok := (*actual)[k]; ok {
+			if !reflect.DeepEqual(v, val) {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+func containsKeys(actual *map[string]interface{}, key []string) bool {
+	for _, k := range key {
+		if _, ok := (*actual)[k]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func assertExpectedAndRemovedAttributes(actual *map[string]interface{}, expectedAttributes *map[string]interface{}, removed []string) error {
+	if expectedAttributes != nil && !containsExpectedAttributes(actual, expectedAttributes) {
+		return fmt.Errorf("expected attributes are not found %v in %v", expectedAttributes, *actual)
+	}
+	if removed != nil && containsKeys(actual, removed) {
+		return fmt.Errorf("one or more attributes from '%v' was not removed", removed)
+	}
+
+	return nil
 }
