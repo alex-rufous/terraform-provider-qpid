@@ -247,3 +247,43 @@ func (c *Client) getExchangeBindings(nodeName string, hostName string, exchange 
 	}
 	return &[]map[string]interface{}{}, nil
 }
+
+func (c *Client) CreateAuthenticationProvider(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("authenticationprovider", attributes)
+}
+
+func (c *Client) GetAuthenticationProvider(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("authenticationprovider/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteAuthenticationProvider(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("authenticationprovider/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateAuthenticationProvider(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("authenticationprovider/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetAuthenticationProviders() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("authenticationprovider", true)
+}
+
+func (c *Client) CreateUser(authenticationProvider string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("user/"+url.PathEscape(authenticationProvider), attributes)
+}
+
+func (c *Client) GetUser(authenticationProvider string, name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("user/" + url.PathEscape(authenticationProvider) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteUser(authenticationProvider string, name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("user/" + url.PathEscape(authenticationProvider) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateUser(authenticationProvider string, name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("user/"+url.PathEscape(authenticationProvider)+"/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetUsers(authenticationProvider string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("user/"+url.PathEscape(authenticationProvider), true)
+}

@@ -41,7 +41,7 @@ func resourceVirtualHost() *schema.Resource {
 					valid := value == "ProvidedStore" || value == "BDB" || value == "DERBY" || value == "JDBC"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid virtual host node type value : '%q'. Allowed values: \"ProvidedStore\", \"BDB\", \"DERBY\", \"JDBC\"", v))
+						errors = append(errors, fmt.Errorf("invalid virtual host type value : '%q'. Allowed values: \"ProvidedStore\", \"BDB\", \"DERBY\", \"JDBC\"", v))
 					}
 
 					return
@@ -55,7 +55,7 @@ func resourceVirtualHost() *schema.Resource {
 			"durable": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: false,
+				ForceNew: true,
 				Default:  nil,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 
@@ -114,6 +114,7 @@ func resourceVirtualHost() *schema.Resource {
 				Optional:      true,
 				ForceNew:      false,
 				Default:       nil,
+				Sensitive:     true,
 				ConflictsWith: []string{"store_path", "local_transaction_synchronization_policy", "remote_transaction_synchronization_policy", "coalescing_sync", "durability", "store_underfull_size", "store_overfull_size"},
 			},
 			// only applicable for type JDBC
@@ -356,12 +357,6 @@ func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	attributes, err := client.GetVirtualHost(parent, name)
 	if err != nil {
 		return err
-	}
-	if len(*attributes) == 0 {
-		// this does not look right
-		// the resource would be deleted
-		d.SetId("")
-		return nil
 	}
 
 	schemaMap := resourceVirtualHost().Schema

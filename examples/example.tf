@@ -182,3 +182,16 @@ resource "qpid_binding" "bnd2" {
           "x-filter-jms-selector" = "b=2"
   }
 }
+
+resource "qpid_authentication_provider" "auth" {
+  type = "Plain"
+  name = "auth"
+}
+
+resource "qpid_user" "test_user" {
+  depends_on = [qpid_authentication_provider.auth]
+  name = "test_user"
+  type = "managed"
+  password = "bar"
+  authentication_provider = "auth"
+}

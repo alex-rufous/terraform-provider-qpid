@@ -67,7 +67,7 @@ func resourceExchange() *schema.Resource {
 			"durable": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: false,
+				ForceNew: true,
 				Default:  true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					_, keySet := d.GetOk(k)
