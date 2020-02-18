@@ -82,14 +82,14 @@ func testAcceptanceAuthenticationProviderCheck(rn string, expectedAttributes *ma
 		}
 
 		client := testAcceptanceProvider.Meta().(*Client)
-		nodes, err := client.GetAuthenticationProviders()
+		providers, err := client.GetAuthenticationProviders()
 		if err != nil {
 			return fmt.Errorf("error getting authentication provider: %s", err)
 		}
 
-		for _, node := range *nodes {
-			if node["id"] == rs.Primary.ID {
-				return assertExpectedAndRemovedAttributes(&node, expectedAttributes, removed)
+		for _, provider := range *providers {
+			if provider["id"] == rs.Primary.ID {
+				return assertExpectedAndRemovedAttributes(&provider, expectedAttributes, removed)
 			}
 		}
 
@@ -100,12 +100,12 @@ func testAcceptanceAuthenticationProviderCheck(rn string, expectedAttributes *ma
 func testAcceptanceAuthenticationProviderCheckDestroy(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAcceptanceProvider.Meta().(*Client)
-		nodes, err := client.GetAuthenticationProviders()
+		providers, err := client.GetAuthenticationProviders()
 		if err != nil {
-			return fmt.Errorf("error getting nodes: %s", err)
+			return fmt.Errorf("error getting providers: %s", err)
 		}
 
-		for _, node := range *nodes {
+		for _, node := range *providers {
 			if node["name"] == name {
 				return fmt.Errorf("authentication provider '%v' still exists", node)
 			}
@@ -116,7 +116,7 @@ func testAcceptanceAuthenticationProviderCheckDestroy(name string) resource.Test
 }
 
 const testAcceptanceAuthenticationProviderResourceName = "qpid_authentication_provider"
-const testAcceptanceAuthenticationProviderName = "test_authentication_provider"
+const testAcceptanceAuthenticationProviderName = "acceptance_test_authentication_provider"
 const testAcceptanceAuthenticationProviderResource = testAcceptanceAuthenticationProviderResourceName + "." + testAcceptanceAuthenticationProviderName
 
 const testAcceptanceAuthenticationProviderPlainConfigMinimal = `

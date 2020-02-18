@@ -27,7 +27,7 @@ func resourceVirtualHost() *schema.Resource {
 			},
 			"virtual_host_node": {
 				Type:        schema.TypeString,
-				Description: "The name of Virtual Host parent",
+				Description: "The name of Virtual Host Node",
 				Required:    true,
 				ForceNew:    true,
 			},
@@ -298,8 +298,8 @@ func createVirtualHost(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 	attributes := toVirtualHostAttributes(d)
-	parent := d.Get("virtual_host_node").(string)
-	resp, err := client.CreateVirtualHost(parent, attributes)
+	node := d.Get("virtual_host_node").(string)
+	resp, err := client.CreateVirtualHost(node, attributes)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func createVirtualHost(d *schema.ResourceData, meta interface{}) error {
 		attributes, err := convertHttpResponseToMap(resp)
 		if err != nil {
 			var err2 error
-			attributes, err2 = client.GetVirtualHost(parent, name)
+			attributes, err2 = client.GetVirtualHost(node, name)
 			if err2 != nil {
 				return err
 			}
@@ -319,7 +319,7 @@ func createVirtualHost(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("error creating qpid virtual host '%s/%s': %s", parent, name, resp.Status)
+	return fmt.Errorf("error creating qpid virtual host '%s/%s': %s", node, name, resp.Status)
 }
 
 func toVirtualHostAttributes(d *schema.ResourceData) *map[string]interface{} {
@@ -352,9 +352,9 @@ func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	parent := d.Get("virtual_host_node").(string)
+	node := d.Get("virtual_host_node").(string)
 
-	attributes, err := client.GetVirtualHost(parent, name)
+	attributes, err := client.GetVirtualHost(node, name)
 	if err != nil {
 		return err
 	}
@@ -400,8 +400,8 @@ func existsVirtualHost(d *schema.ResourceData, meta interface{}) (bool, error) {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	parent := d.Get("virtual_host_node").(string)
-	attributes, err := client.GetVirtualHost(parent, name)
+	node := d.Get("virtual_host_node").(string)
+	attributes, err := client.GetVirtualHost(node, name)
 	if err != nil {
 		return false, err
 	}
@@ -413,15 +413,15 @@ func deleteVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	parent := d.Get("virtual_host_node").(string)
+	node := d.Get("virtual_host_node").(string)
 
-	resp, err := client.DeleteVirtualHost(parent, name)
+	resp, err := client.DeleteVirtualHost(node, name)
 	if err != nil {
 		return nil
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("error deleting qpid virtual host '%s' on node %s: %s", name, parent, resp.Status)
+		return fmt.Errorf("error deleting qpid virtual host '%s' on node %s: %s", name, node, resp.Status)
 	}
 	d.SetId("")
 	return nil
@@ -430,10 +430,10 @@ func deleteVirtualHost(d *schema.ResourceData, meta interface{}) error {
 func updateVirtualHost(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	name := d.Get("name").(string)
-	parent := d.Get("virtual_host_node").(string)
+	node := d.Get("virtual_host_node").(string)
 	attributes := toVirtualHostAttributes(d)
 
-	resp, err := client.UpdateVirtualHost(parent, name, attributes)
+	resp, err := client.UpdateVirtualHost(node, name, attributes)
 	if err != nil {
 		return err
 	}
@@ -442,5 +442,5 @@ func updateVirtualHost(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("error updating qpid virtual host '%s' on node '%s': %s", name, parent, resp.Status)
+	return fmt.Errorf("error updating qpid virtual host '%s' on node '%s': %s", name, node, resp.Status)
 }

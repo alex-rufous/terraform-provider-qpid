@@ -195,3 +195,37 @@ resource "qpid_user" "test_user" {
   password = "bar"
   authentication_provider = "auth"
 }
+
+resource "qpid_group_provider" "groups" {
+  type = "ManagedGroupProvider"
+  name = "groups"
+}
+
+resource "qpid_group" "admins" {
+  type = "ManagedGroup"
+  name = "admins"
+  group_provider = "groups"
+}
+
+resource "qpid_group" "messaging" {
+  depends_on = [qpid_group_provider.groups]
+  type = "ManagedGroup"
+  name = "messaging"
+  group_provider = "groups"
+}
+
+resource "qpid_group_member" "admin" {
+  depends_on = [qpid_group.admins]
+  type = "ManagedGroupMember"
+  name = "admin"
+  group_provider = "groups"
+  group = "admins"
+}
+
+resource "qpid_group_member" "client" {
+  depends_on = [qpid_group.messaging]
+  type = "ManagedGroupMember"
+  name = "client"
+  group_provider = "groups"
+  group = "messaging"
+}

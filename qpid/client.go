@@ -307,3 +307,43 @@ func (c *Client) UpdateGroupProvider(name string, attributes *map[string]interfa
 func (c *Client) GetGroupProviders() (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("groupprovider", true)
 }
+
+func (c *Client) CreateGroup(groupProvider string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("group/"+url.PathEscape(groupProvider), attributes)
+}
+
+func (c *Client) GetGroup(groupProvider string, name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("group/" + url.PathEscape(groupProvider) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteGroup(groupProvider string, name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("group/" + url.PathEscape(groupProvider) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateGroup(groupProvider string, name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("group/"+url.PathEscape(groupProvider)+"/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetGroups(groupProvider string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("group/"+url.PathEscape(groupProvider), true)
+}
+
+func (c *Client) CreateGroupMember(groupProvider string, groupName string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("groupmember/"+url.PathEscape(groupProvider)+"/"+url.PathEscape(groupName), attributes)
+}
+
+func (c *Client) GetGroupMember(groupProvider string, groupName string, name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("groupmember/" + url.PathEscape(groupProvider) + "/" + url.PathEscape(groupName) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteGroupMember(groupProvider string, groupName string, name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("groupmember/" + url.PathEscape(groupProvider) + "/" + url.PathEscape(groupName) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateGroupMember(groupProvider string, groupName string, name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("groupmember/"+url.PathEscape(groupProvider)+"/"+url.PathEscape(groupName)+"/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetGroupMembers(groupProvider string, groupName string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("groupmember/"+url.PathEscape(groupProvider)+"/"+url.PathEscape(groupName), true)
+}

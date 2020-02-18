@@ -30,14 +30,14 @@ func resourceQueue() *schema.Resource {
 
 			"virtual_host_node": {
 				Type:        schema.TypeString,
-				Description: "The name of Virtual Host Node parent",
+				Description: "The name of Virtual Host Node",
 				Required:    true,
 				ForceNew:    true,
 			},
 
 			"virtual_host": {
 				Type:        schema.TypeString,
-				Description: "The name of Virtual Host parent",
+				Description: "The name of Virtual Host",
 				Required:    true,
 				ForceNew:    true,
 			},

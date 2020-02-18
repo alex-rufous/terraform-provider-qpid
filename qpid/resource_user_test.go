@@ -63,23 +63,23 @@ func testAcceptanceUserCheck(rn string, expectedAttributes *map[string]interface
 
 		authenticationProvider, ok := rs.Primary.Attributes["authentication_provider"]
 		if !ok {
-			return fmt.Errorf("parent not set")
+			return fmt.Errorf("authentication_provider not set")
 		}
 
 		client := testAcceptanceProvider.Meta().(*Client)
 
-		hosts, err := client.GetUsers(authenticationProvider)
+		users, err := client.GetUsers(authenticationProvider)
 		if err != nil {
-			return fmt.Errorf("error on getting hosts: %s", err)
+			return fmt.Errorf("error on getting users: %s", err)
 		}
 
-		for _, host := range *hosts {
-			if host["id"] == rs.Primary.ID {
-				return assertExpectedAndRemovedAttributes(&host, expectedAttributes, removed)
+		for _, user := range *users {
+			if user["id"] == rs.Primary.ID {
+				return assertExpectedAndRemovedAttributes(&user, expectedAttributes, removed)
 			}
 		}
 
-		return fmt.Errorf("unable to find virtualhost %s", rn)
+		return fmt.Errorf("unable to find user %s", rn)
 	}
 }
 
@@ -87,13 +87,13 @@ func testAcceptanceUserCheckDestroy(testAuthenticationProviderName string, virtu
 	return func(s *terraform.State) error {
 		client := testAcceptanceProvider.Meta().(*Client)
 
-		hosts, err := client.GetUsers(testAuthenticationProviderName)
+		users, err := client.GetUsers(testAuthenticationProviderName)
 		if err != nil {
 			return fmt.Errorf("error on getting users for node '%s' : %s", virtualHostName, err)
 		}
 
-		for _, host := range *hosts {
-			if host["name"] == virtualHostName {
+		for _, user := range *users {
+			if user["name"] == virtualHostName {
 				return fmt.Errorf("user %s/%s still exist", testAuthenticationProviderName, virtualHostName)
 			}
 		}
@@ -102,10 +102,10 @@ func testAcceptanceUserCheckDestroy(testAuthenticationProviderName string, virtu
 	}
 }
 
-func dropUser(nodeName string, hostName string) func() {
+func dropUser(providerName string, userName string) func() {
 	return func() {
 		client := testAcceptanceProvider.Meta().(*Client)
-		resp, err := client.DeleteUser(nodeName, hostName)
+		resp, err := client.DeleteUser(providerName, userName)
 		if err != nil {
 			fmt.Printf("unable to delete user : %v", err)
 			return
@@ -117,7 +117,7 @@ func dropUser(nodeName string, hostName string) func() {
 	}
 }
 
-const testAcceptanceUserName = "test_user"
+const testAcceptanceUserName = "acceptance_test_user"
 const testAcceptanceUserResourceName = "qpid_user"
 const testAcceptanceUserResource = testAcceptanceUserResourceName + "." + testAcceptanceUserName
 

@@ -85,7 +85,7 @@ func testAcceptanceVirtualHostCheck(rn string, expectedAttributes *map[string]in
 
 		nodeName, ok := rs.Primary.Attributes["virtual_host_node"]
 		if !ok {
-			return fmt.Errorf("parent not set")
+			return fmt.Errorf("virtual_host_node not set")
 		}
 
 		client := testAcceptanceProvider.Meta().(*Client)

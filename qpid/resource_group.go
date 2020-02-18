@@ -7,13 +7,13 @@ import (
 	"net/http"
 )
 
-func resourceUser() *schema.Resource {
+func resourceGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: createUser,
-		Read:   readUser,
-		Delete: deleteUser,
-		Update: updateUser,
-		Exists: existsUser,
+		Create: createGroup,
+		Read:   readGroup,
+		Delete: deleteGroup,
+		Update: updateGroup,
+		Exists: existsGroup,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -21,27 +21,27 @@ func resourceUser() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
-				Description: "Name of User",
+				Description: "Name of Group",
 				Required:    true,
 				ForceNew:    true,
 			},
-			"authentication_provider": {
+			"group_provider": {
 				Type:        schema.TypeString,
-				Description: "The name of authentication provider user belongs to",
+				Description: "The name of group provider the group belongs to",
 				Required:    true,
 				ForceNew:    true,
 			},
 			"type": {
 				Type:        schema.TypeString,
-				Description: "Type of User",
+				Description: "Type of Group",
 				Required:    true,
 				ForceNew:    true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
 					value := v.(string)
-					valid := value == "managed"
+					valid := value == "ManagedGroup"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid user type value : '%q'. Allowed values: \"managed\"", v))
+						errors = append(errors, fmt.Errorf("invalid group type value : '%q'. Allowed values: \"managed\"", v))
 					}
 
 					return
@@ -66,27 +66,16 @@ func resourceUser() *schema.Resource {
 					return !keySet && (old == "true" || new == "true")
 				},
 			},
-
-			"password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				ForceNew:  false,
-				Default:   nil,
-				Sensitive: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-			},
 		},
 	}
 }
 
-func createUser(d *schema.ResourceData, meta interface{}) error {
+func createGroup(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
-	attributes := toUserAttributes(d)
-	authenticationProvider := d.Get("authentication_provider").(string)
-	resp, err := client.CreateUser(authenticationProvider, attributes)
+	attributes := toGroupAttributes(d)
+	groupProvider := d.Get("group_provider").(string)
+	resp, err := client.CreateGroup(groupProvider, attributes)
 	if err != nil {
 		return err
 	}
@@ -96,7 +85,7 @@ func createUser(d *schema.ResourceData, meta interface{}) error {
 		attributes, err := convertHttpResponseToMap(resp)
 		if err != nil {
 			var err2 error
-			attributes, err2 = client.GetUser(authenticationProvider, name)
+			attributes, err2 = client.GetGroup(groupProvider, name)
 			if err2 != nil {
 				return err
 			}
@@ -106,23 +95,23 @@ func createUser(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("error creating qpid user '%s/%s': %s", authenticationProvider, name, resp.Status)
+	return fmt.Errorf("error creating qpid group '%s/%s': %s", groupProvider, name, resp.Status)
 }
 
-func toUserAttributes(d *schema.ResourceData) *map[string]interface{} {
+func toGroupAttributes(d *schema.ResourceData) *map[string]interface{} {
 
-	attributes := schemaToAttributes(d, resourceUser().Schema, "authentication_provider")
+	attributes := schemaToAttributes(d, resourceGroup().Schema, "group_provider")
 	return attributes
 }
 
-func readUser(d *schema.ResourceData, meta interface{}) error {
+func readGroup(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	authenticationProvider := d.Get("authentication_provider").(string)
+	groupProvider := d.Get("group_provider").(string)
 
-	attributes, err := client.GetUser(authenticationProvider, name)
+	attributes, err := client.GetGroup(groupProvider, name)
 	if err != nil {
 		return err
 	}
@@ -133,13 +122,13 @@ func readUser(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	schemaMap := resourceUser().Schema
+	schemaMap := resourceGroup().Schema
 	for key := range schemaMap {
 		_, keySet := d.GetOk(key)
 		var keyCamelCased = convertToCamelCase(key)
 		value, attributeSet := (*attributes)[keyCamelCased]
 
-		if key != "authentication_provider" && (keySet || attributeSet) {
+		if key != "group_provider" && (keySet || attributeSet) {
 			err = d.Set(key, value)
 			if err != nil {
 				return err
@@ -150,13 +139,13 @@ func readUser(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func existsUser(d *schema.ResourceData, meta interface{}) (bool, error) {
+func existsGroup(d *schema.ResourceData, meta interface{}) (bool, error) {
 
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	authenticationProvider := d.Get("authentication_provider").(string)
-	attributes, err := client.GetUser(authenticationProvider, name)
+	groupProvider := d.Get("group_provider").(string)
+	attributes, err := client.GetGroup(groupProvider, name)
 	if err != nil {
 		return false, err
 	}
@@ -164,31 +153,31 @@ func existsUser(d *schema.ResourceData, meta interface{}) (bool, error) {
 	return len(*attributes) > 0, nil
 }
 
-func deleteUser(d *schema.ResourceData, meta interface{}) error {
+func deleteGroup(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 
 	name := d.Get("name").(string)
-	authenticationProvider := d.Get("authentication_provider").(string)
+	groupProvider := d.Get("group_provider").(string)
 
-	resp, err := client.DeleteUser(authenticationProvider, name)
+	resp, err := client.DeleteGroup(groupProvider, name)
 	if err != nil {
 		return nil
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("error deleting qpid user '%s' on node %s: %s", name, authenticationProvider, resp.Status)
+		return fmt.Errorf("error deleting qpid group '%s' on node %s: %s", name, groupProvider, resp.Status)
 	}
 	d.SetId("")
 	return nil
 }
 
-func updateUser(d *schema.ResourceData, meta interface{}) error {
+func updateGroup(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Client)
 	name := d.Get("name").(string)
-	authenticationProvider := d.Get("authentication_provider").(string)
-	attributes := toUserAttributes(d)
+	groupProvider := d.Get("group_provider").(string)
+	attributes := toGroupAttributes(d)
 
-	resp, err := client.UpdateUser(authenticationProvider, name, attributes)
+	resp, err := client.UpdateGroup(groupProvider, name, attributes)
 	if err != nil {
 		return err
 	}
@@ -197,5 +186,5 @@ func updateUser(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("error updating qpid user '%s' on node '%s': %s", name, authenticationProvider, resp.Status)
+	return fmt.Errorf("error updating qpid group '%s' on node '%s': %s", name, groupProvider, resp.Status)
 }
