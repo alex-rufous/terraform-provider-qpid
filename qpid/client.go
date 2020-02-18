@@ -287,3 +287,23 @@ func (c *Client) UpdateUser(authenticationProvider string, name string, attribut
 func (c *Client) GetUsers(authenticationProvider string) (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("user/"+url.PathEscape(authenticationProvider), true)
 }
+
+func (c *Client) CreateGroupProvider(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("groupprovider", attributes)
+}
+
+func (c *Client) GetGroupProvider(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("groupprovider/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteGroupProvider(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("groupprovider/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateGroupProvider(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("groupprovider/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetGroupProviders() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("groupprovider", true)
+}

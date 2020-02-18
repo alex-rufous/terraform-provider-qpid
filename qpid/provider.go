@@ -92,6 +92,7 @@ func Provider() terraform.ResourceProvider {
 			"qpid_binding":                 resourceBinding(),
 			"qpid_authentication_provider": resourceAuthenticationProvider(),
 			"qpid_user":                    resourceUser(),
+			"qpid_group_provider":          resourceGroupProvider(),
 		},
 
 		ConfigureFunc: providerConfigure,

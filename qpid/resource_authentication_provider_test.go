@@ -16,7 +16,7 @@ func TestAcceptanceAuthenticationProvider(t *testing.T) {
 		CheckDestroy: testAcceptanceAuthenticationProviderCheckDestroy(testAcceptanceAuthenticationProviderName),
 		Steps: []resource.TestStep{
 			{
-				// test new virtual host node creation from configuration
+				// test new authentication provider creation from configuration
 				Config: testAcceptanceAuthenticationProviderPlainConfigMinimal,
 				Check: testAcceptanceAuthenticationProviderCheck(
 					testAcceptanceAuthenticationProviderResource,
@@ -24,7 +24,7 @@ func TestAcceptanceAuthenticationProvider(t *testing.T) {
 				),
 			},
 			{
-				// test virtual host node restoration from configuration after its deletion on broker side
+				// test authentication provider restoration from configuration after its deletion on broker side
 				PreConfig: dropAuthenticationProvider(testAcceptanceAuthenticationProviderName),
 				Config:    testAcceptanceAuthenticationProviderPlainConfigMinimal,
 				Check: testAcceptanceAuthenticationProviderCheck(
@@ -33,7 +33,7 @@ func TestAcceptanceAuthenticationProvider(t *testing.T) {
 				),
 			},
 			{
-				// test virtual host node update
+				// test authentication provider update
 				Config: getAuthenticationProviderConfigurationWithAttributes(&map[string]string{"secure_only_mechanisms": "[\"PLAIN\", \"CRAM-MD5\", \"SCRAM-SHA-1\"]"}),
 				Check: testAcceptanceAuthenticationProviderCheck(
 					testAcceptanceAuthenticationProviderResource,
@@ -43,7 +43,7 @@ func TestAcceptanceAuthenticationProvider(t *testing.T) {
 				),
 			},
 			{
-				// test virtual host node attribute removal
+				// test authentication provider attribute removal
 				Config: testAcceptanceAuthenticationProviderPlainConfigMinimal,
 				Check: testAcceptanceAuthenticationProviderCheck(
 					testAcceptanceAuthenticationProviderResource,
