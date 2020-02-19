@@ -347,3 +347,23 @@ func (c *Client) UpdateGroupMember(groupProvider string, groupName string, name 
 func (c *Client) GetGroupMembers(groupProvider string, groupName string) (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("groupmember/"+url.PathEscape(groupProvider)+"/"+url.PathEscape(groupName), true)
 }
+
+func (c *Client) CreateAccessControlProvider(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("accesscontrolprovider", attributes)
+}
+
+func (c *Client) GetAccessControlProvider(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("accesscontrolprovider/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteAccessControlProvider(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("accesscontrolprovider/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateAccessControlProvider(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("accesscontrolprovider/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetAccessControlProviders() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("accesscontrolprovider", true)
+}

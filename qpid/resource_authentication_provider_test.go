@@ -48,7 +48,7 @@ func TestAcceptanceAuthenticationProvider(t *testing.T) {
 				Check: testAcceptanceAuthenticationProviderCheck(
 					testAcceptanceAuthenticationProviderResource,
 					&map[string]interface{}{"name": testAcceptanceAuthenticationProviderName, "type": "Plain"},
-					"context",
+					"secureOnlyMechanisms",
 				),
 			},
 		},

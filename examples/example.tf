@@ -229,3 +229,81 @@ resource "qpid_group_member" "client" {
   group_provider = "groups"
   group = "messaging"
 }
+
+
+resource "qpid_access_control_provider" "acl" {
+  name = "acl"
+  type = "RuleBased"
+  priority = 1
+
+  rule {
+    identity = "guest"
+    object_type = "ALL"
+    operation = "ALL"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "admins"
+    object_type = "ALL"
+    operation = "ALL"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "messaging"
+    object_type = "VIRTUALHOST"
+    operation = "ACCESS"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "messaging"
+    object_type = "MANAGEMENT"
+    operation = "ACCESS"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "messaging"
+    object_type = "ALL"
+    operation = "CONSUME"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "messaging"
+    object_type = "ALL"
+    operation = "PUBLISH"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "messaging"
+    object_type = "EXCHANGE"
+    operation = "BIND"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "messaging"
+    object_type = "EXCHANGE"
+    operation = "UNBIND"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "EXCHANGE"
+    object_type = "ALL"
+    operation = "INVOKE"
+    outcome = "ALLOW_LOG"
+  }
+
+  rule {
+    identity = "ALL"
+    object_type = "ALL"
+    operation = "ALL"
+    outcome = "DENY_LOG"
+  }
+
+}
