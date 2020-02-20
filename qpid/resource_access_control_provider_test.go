@@ -12,9 +12,9 @@ import (
 func TestAcceptanceAccessControlProvider(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAcceptancePreCheck(t) },
-		Providers: testAcceptanceProviders,
-		//CheckDestroy: testAcceptanceAccessControlProviderCheckDestroy(testAcceptanceAccessControlProviderName),
+		PreCheck:     func() { testAcceptancePreCheck(t) },
+		Providers:    testAcceptanceProviders,
+		CheckDestroy: testAcceptanceAccessControlProviderCheckDestroy(testAcceptanceAccessControlProviderName),
 		Steps: []resource.TestStep{
 			{
 				// test new access control provider creation from configuration
@@ -35,7 +35,7 @@ func TestAcceptanceAccessControlProvider(t *testing.T) {
 			},
 			{
 				// test access control provider update
-				Config: getAccessControlProviderConfigurationWithAttributes(&map[string]string{"context": "{\"foo\":\"bar\"}"}),
+				Config: getAccessControlProviderConfigurationWithAttributes(`context = {"foo"="bar"}`),
 				Check: testAcceptanceAccessControlProviderCheck(
 					testAcceptanceAccessControlProviderResource,
 					&map[string]interface{}{"name": testAcceptanceAccessControlProviderName,
@@ -48,7 +48,82 @@ func TestAcceptanceAccessControlProvider(t *testing.T) {
 				Config: getRuleBasedAccessControlProviderConfiguration(),
 				Check: testAcceptanceAccessControlProviderCheck(
 					testAcceptanceAccessControlProviderResource,
-					&map[string]interface{}{"name": testAcceptanceAccessControlProviderName, "type": "RuleBased"},
+					&map[string]interface{}{"name": testAcceptanceAccessControlProviderName,
+						"type": "RuleBased",
+						"rules": []interface{}{
+							map[string]interface{}{"identity": os.Getenv("QPID_USERNAME"),
+								"objectType": "ALL",
+								"operation":  "ALL",
+								"outcome":    "ALLOW_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": testAcceptanceGroupResourceName,
+								"objectType": "MANAGEMENT",
+								"operation":  "ACCESS",
+								"outcome":    "ALLOW_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": testAcceptanceGroupResourceName,
+								"objectType": "BROKER",
+								"operation":  "CONFIGURE",
+								"outcome":    "ALLOW_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": "ALL",
+								"objectType": "ALL",
+								"operation":  "ALL",
+								"outcome":    "DENY_LOG",
+								"attributes": map[string]interface{}{},
+							},
+						}},
+					"context",
+				),
+			},
+
+			{
+				// test new rule insertion
+				Config: getAccessControlProviderConfigurationWithAttributes(`rule {
+		identity = "foo"
+		object_type = "ALL"
+		operation = "ALL"
+		outcome = "DENY_LOG"
+	}`),
+				Check: testAcceptanceAccessControlProviderCheck(
+					testAcceptanceAccessControlProviderResource,
+					&map[string]interface{}{"name": testAcceptanceAccessControlProviderName,
+						"type": "RuleBased",
+						"rules": []interface{}{
+							map[string]interface{}{"identity": "foo",
+								"objectType": "ALL",
+								"operation":  "ALL",
+								"outcome":    "DENY_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": os.Getenv("QPID_USERNAME"),
+								"objectType": "ALL",
+								"operation":  "ALL",
+								"outcome":    "ALLOW_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": testAcceptanceGroupResourceName,
+								"objectType": "MANAGEMENT",
+								"operation":  "ACCESS",
+								"outcome":    "ALLOW_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": testAcceptanceGroupResourceName,
+								"objectType": "BROKER",
+								"operation":  "CONFIGURE",
+								"outcome":    "ALLOW_LOG",
+								"attributes": map[string]interface{}{},
+							},
+							map[string]interface{}{"identity": "ALL",
+								"objectType": "ALL",
+								"operation":  "ALL",
+								"outcome":    "DENY_LOG",
+								"attributes": map[string]interface{}{},
+							},
+						}},
 					"context",
 				),
 			},
@@ -122,87 +197,57 @@ const testAcceptanceAccessControlProviderName2 = "acceptance_test_access_control
 const testAcceptanceAccessControlProviderResource = testAcceptanceAccessControlProviderResourceName + "." + testAcceptanceAccessControlProviderName
 
 func getRuleBasedAccessControlProviderConfiguration() string {
-	return getAccessControlProviderConfigurationWithAttributes(&map[string]string{})
+	return getAccessControlProviderConfigurationWithAttributes()
 }
 
-func getAccessControlProviderConfigurationWithAttributes(entries *map[string]string) string {
+func getAccessControlProviderConfigurationWithAttributes(entries ...string) string {
 	config := `
 resource "` + testAcceptanceAccessControlProviderResourceName + `" "` + testAcceptanceAccessControlProviderName + `" {
-    name = "` + testAcceptanceAccessControlProviderName + `"
-    type = "RuleBased"
-    priority=1
-
+	name = "` + testAcceptanceAccessControlProviderName + `"
+	type = "RuleBased"
+	priority = 1
 `
-	for k, v := range *entries {
-		config += fmt.Sprintf("    %s=%s\n", k, v)
+
+	for _, v := range entries {
+		config += fmt.Sprintf("	%s\n", v)
 	}
 
 	config += `
-
-    rule {
+	rule {
 		identity = "` + os.Getenv("QPID_USERNAME") + `"
-        object_type = "ALL"
-        operation = "ALL"
-        outcome = "ALLOW_LOG"
-    }
+		object_type = "ALL"
+		operation = "ALL"
+		outcome = "ALLOW_LOG"
+	}
 
-    rule {
+	rule {
 		identity = "` + testAcceptanceGroupResourceName + `"
-        object_type = "MANAGEMENT"
-        operation = "ACCESS"
-        outcome = "ALLOW_LOG"
-    }
+		object_type = "MANAGEMENT"
+		operation = "ACCESS"
+		outcome = "ALLOW_LOG"
+	}
 
-    rule {
+	rule {
 		identity = "` + testAcceptanceGroupResourceName + `"
-        object_type = "BROKER"
-        operation = "CONFIGURE"
-        outcome = "ALLOW_LOG"
-    }
+		object_type = "BROKER"
+		operation = "CONFIGURE"
+		outcome = "ALLOW_LOG"
+	}
 
-    rule {
-		identity = "` + testAcceptanceGroupResourceName + `"
-        object_type = "ALL"
-        operation = "CREATE"
-        outcome = "ALLOW_LOG"
-    }
-
-    rule {
-		identity = "` + testAcceptanceGroupResourceName + `"
-        object_type = "ALL"
-        operation = "DELETE"
-        outcome = "ALLOW_LOG"
-    }
-
-    rule {
-		identity = "` + testAcceptanceGroupResourceName + `"
-        object_type = "ALL"
-        operation = "UPDATE"
-        outcome = "ALLOW_LOG"
-    }
-
-    rule {
-		identity = "` + testAcceptanceGroupResourceName + `"
-        object_type = "ALL"
-        operation = "INVOKE"
-        outcome = "ALLOW_LOG"
-    }
-
-    rule {
+	rule {
 		identity = "ALL"
-        object_type = "ALL"
-        operation = "ALL"
-        outcome = "DENY_LOG"
-    }
+		object_type = "ALL"
+		operation = "ALL"
+		outcome = "DENY_LOG"
+	}
 }
 
 resource "` + testAcceptanceAccessControlProviderResourceName + `" "` + testAcceptanceAccessControlProviderName2 + `" {
-    name = "` + testAcceptanceAccessControlProviderName2 + `"
-    type = "AllowAll"
-    priority=10
+	name = "` + testAcceptanceAccessControlProviderName2 + `"
+	type = "AllowAll"
+	priority=10
 }
 
 `
-
 	return config
 }

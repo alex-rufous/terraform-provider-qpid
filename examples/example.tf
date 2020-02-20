@@ -237,73 +237,115 @@ resource "qpid_access_control_provider" "acl" {
   priority = 1
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "guest"
-    object_type = "ALL"
     operation = "ALL"
-    outcome = "ALLOW_LOG"
+    object_type = "ALL"
   }
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "admins"
-    object_type = "ALL"
     operation = "ALL"
-    outcome = "ALLOW_LOG"
+    object_type = "ALL"
   }
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "messaging"
+    operation = "ACCESS"
     object_type = "VIRTUALHOST"
-    operation = "ACCESS"
-    outcome = "ALLOW_LOG"
   }
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "messaging"
+    operation = "ACCESS"
     object_type = "MANAGEMENT"
-    operation = "ACCESS"
-    outcome = "ALLOW_LOG"
   }
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "messaging"
-    object_type = "ALL"
     operation = "CONSUME"
-    outcome = "ALLOW_LOG"
+    object_type = "ALL"
   }
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "messaging"
-    object_type = "ALL"
     operation = "PUBLISH"
-    outcome = "ALLOW_LOG"
+    object_type = "ALL"
   }
 
   rule {
+    outcome = "ALLOW_LOG"
     identity = "messaging"
-    object_type = "EXCHANGE"
     operation = "BIND"
-    outcome = "ALLOW_LOG"
-  }
-
-  rule {
-    identity = "messaging"
     object_type = "EXCHANGE"
+  }
+
+  rule {
+    outcome = "ALLOW_LOG"
+    identity = "messaging"
     operation = "UNBIND"
-    outcome = "ALLOW_LOG"
+    object_type = "EXCHANGE"
   }
 
   rule {
-    identity = "EXCHANGE"
-    object_type = "ALL"
+    outcome = "ALLOW_LOG"
+    identity = "messaging"
+    operation = "CREATE"
+    object_type = "QUEUE"
+    attributes = {
+      "TEMPORARY"="true"
+      "AUTO_DELETE"="true"
+    }
+  }
+
+  rule {
+    outcome = "ALLOW_LOG"
+    identity = "messaging"
+    operation = "DELETE"
+    object_type = "QUEUE"
+    attributes = {
+      "TEMPORARY"="true"
+      "AUTO_DELETE"="true"
+    }
+  }
+
+  rule {
+    outcome = "ALLOW_LOG"
+    identity = "messaging"
     operation = "INVOKE"
-    outcome = "ALLOW_LOG"
+    object_type = "QUEUE"
+    attributes = {
+      "METHOD_NAME"="getMessage*"
+    }
   }
 
   rule {
-    identity = "ALL"
+    outcome = "ALLOW_LOG"
+    identity = "messaging"
+    operation = "INVOKE"
+    object_type = "QUEUE"
+    attributes = {
+      "METHOD_NAME"="deleteMessages"
+    }
+  }
+
+  rule {
+    outcome = "ALLOW_LOG"
+    identity = "messaging"
+    operation = "ACCESS_LOGS"
     object_type = "ALL"
-    operation = "ALL"
+  }
+
+  rule {
     outcome = "DENY_LOG"
+    identity = "ALL"
+    operation = "ALL"
+    object_type = "ALL"
   }
 
 }

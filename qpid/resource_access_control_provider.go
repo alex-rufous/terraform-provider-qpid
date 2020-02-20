@@ -205,10 +205,10 @@ func toAccessControlProviderAttributes(d *schema.ResourceData) *map[string]inter
 
 	value, exists := d.GetOk("rule")
 	if exists {
-		var val, expected = value.(*schema.Set)
+		var val, expected = value.([]interface{})
 		if expected && val != nil {
-			var items = val.List()
-			for i, v := range items {
+			var items = make([]map[string]interface{}, len(val))
+			for i, v := range val {
 				p := v.(map[string]interface{})
 				items[i] = *createMapWithKeysInCameCase(&p)
 			}
@@ -251,6 +251,7 @@ func readAccessControlProvider(d *schema.ResourceData, meta interface{}) error {
 		if keySet || attributeSet {
 			if key == "rule" && value != nil {
 				rules, validType := value.([]interface{})
+
 				if validType {
 					val := make([]map[string]interface{}, len(rules))
 					for idx, v := range rules {
