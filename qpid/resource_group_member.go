@@ -122,28 +122,7 @@ func readGroupMember(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	if len(*attributes) == 0 {
-		// this does not look right
-		// the resource would be deleted
-		d.SetId("")
-		return nil
-	}
-
-	schemaMap := resourceGroupMember().Schema
-	for key := range schemaMap {
-		_, keySet := d.GetOk(key)
-		var keyCamelCased = convertToCamelCase(key)
-		value, attributeSet := (*attributes)[keyCamelCased]
-
-		if key != "group_provider" && key != "group" && (keySet || attributeSet) {
-			err = d.Set(key, value)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return applyResourceAttributes(d, attributes, "group_provider", "group")
 }
 
 func existsGroupMember(d *schema.ResourceData, meta interface{}) (bool, error) {

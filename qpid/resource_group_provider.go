@@ -152,29 +152,7 @@ func readGroupProvider(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if len(*attributes) == 0 {
-		return nil
-	}
-
-	schemaMap := resourceGroupProvider().Schema
-	for key, v := range schemaMap {
-		_, keySet := d.GetOk(key)
-		keyCamelCased := convertToCamelCase(key)
-		value, attributeSet := (*attributes)[keyCamelCased]
-
-		if keySet || attributeSet {
-			value, err = convertIfValueIsStringWhenPrimitiveIsExpected(value, v.Type)
-			if err != nil {
-				return err
-			}
-			err = d.Set(key, value)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return applyResourceAttributes(d, attributes)
 }
 
 func existsGroupProvider(d *schema.ResourceData, meta interface{}) (bool, error) {

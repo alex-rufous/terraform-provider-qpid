@@ -265,32 +265,26 @@ func readVirtualHostNode(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if len(*attributes) == 0 {
-		d.SetId("")
-		return nil
+	err = applyResourceAttributes(d, attributes, "permitted_nodes")
+	if err != nil {
+		return err
 	}
 
-	schemaMap := resourceVirtualHostNode().Schema
-	for key := range schemaMap {
-		_, keySet := d.GetOk(key)
-		keyCamelCased := convertToCamelCase(key)
-		value, attributeSet := (*attributes)[keyCamelCased]
-
-		if keySet || attributeSet {
-
-			if key == "permitted_nodes" && value != nil {
-				val, expected := value.([]interface{})
-				if expected {
-					value = convertToArrayOfStrings(&val)
-				} else {
-					return fmt.Errorf("unexpected value set for %s: %v", key, value)
-				}
+	_, keySet := d.GetOk("permitted_nodes")
+	value, attributeSet := (*attributes)[("permittedNodes")]
+	if keySet || attributeSet {
+		if value != nil {
+			val, expected := value.([]interface{})
+			if expected {
+				value = convertToArrayOfStrings(&val)
+			} else {
+				return fmt.Errorf("unexpected value set for %s: %v", "permitted_nodes", value)
 			}
+		}
 
-			err = d.Set(key, value)
-			if err != nil {
-				return err
-			}
+		err = d.Set("permitted_nodes", value)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

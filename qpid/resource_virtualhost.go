@@ -359,36 +359,28 @@ func readVirtualHost(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	schemaMap := resourceVirtualHost().Schema
-	for key := range schemaMap {
-		_, keySet := d.GetOk(key)
-		var keyCamelCased string
-		if key == "node_auto_creation_policy" {
-			keyCamelCased = "nodeAutoCreationPolicies"
-		} else {
-			keyCamelCased = convertToCamelCase(key)
-		}
-		value, attributeSet := (*attributes)[keyCamelCased]
+	err = applyResourceAttributes(d, attributes, "node_auto_creation_policy", "virtual_host_node")
+	if err != nil {
+		return err
+	}
 
-		if key != "virtual_host_node" && (keySet || attributeSet) {
-
-			if key == "node_auto_creation_policy" && value != nil {
-				val := value.([]interface{})
-				s := d.Get(key).(*schema.Set)
-				if s != nil {
-					for _, v := range val {
-						p := v.(map[string]interface{})
-						s.Add(*createMapWithKeysUnderscored(&p))
-					}
+	keyValue, keySet := d.GetOk("node_auto_creation_policy")
+	value, attributeSet := (*attributes)["nodeAutoCreationPolicies"]
+	if keySet || attributeSet {
+		if value != nil {
+			s := keyValue.(*schema.Set)
+			if s != nil {
+				for _, v := range value.([]interface{}) {
+					p := v.(map[string]interface{})
+					s.Add(*createMapWithKeysUnderscored(&p))
 				}
-				value = s
-
 			}
+			value = s
+		}
 
-			err = d.Set(key, value)
-			if err != nil {
-				return err
-			}
+		err = d.Set("node_auto_creation_policy", value)
+		if err != nil {
+			return err
 		}
 	}
 

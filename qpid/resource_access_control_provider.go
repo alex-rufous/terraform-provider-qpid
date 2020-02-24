@@ -237,40 +237,34 @@ func readAccessControlProvider(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	schemaMap := resourceVirtualHost().Schema
-	for key := range schemaMap {
-		_, keySet := d.GetOk(key)
-		var keyCamelCased string
-		if key == "rule" {
-			keyCamelCased = "rules"
-		} else {
-			keyCamelCased = convertToCamelCase(key)
-		}
-		value, attributeSet := (*attributes)[keyCamelCased]
-
-		if keySet || attributeSet {
-			if key == "rule" && value != nil {
-				rules, validType := value.([]interface{})
-
-				if validType {
-					val := make([]map[string]interface{}, len(rules))
-					for idx, v := range rules {
-						p := v.(map[string]interface{})
-						val[idx] = (*createMapWithKeysUnderscored(&p))
-					}
-					value = val
-				} else {
-					value = nil
-				}
-			}
-
-			err = d.Set(key, value)
-			if err != nil {
-				return err
-			}
-		}
+	err = applyResourceAttributes(d, attributes, "rule")
+	if err != nil {
+		return err
 	}
 
+	_, keySet := d.GetOk("rule")
+	value, attributeSet := (*attributes)[("rules")]
+	if keySet || attributeSet {
+		if value != nil {
+			rules, validType := value.([]interface{})
+
+			if validType {
+				val := make([]map[string]interface{}, len(rules))
+				for idx, v := range rules {
+					p := v.(map[string]interface{})
+					val[idx] = (*createMapWithKeysUnderscored(&p))
+				}
+				value = val
+			} else {
+				value = nil
+			}
+		}
+
+		err = d.Set("rule", value)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

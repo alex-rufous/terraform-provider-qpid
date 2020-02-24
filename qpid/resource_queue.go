@@ -394,39 +394,36 @@ func readQueue(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if len(*attributes) == 0 {
-		return nil
+	err = applyResourceAttributes(d, attributes, "virtual_host_node", "virtual_host", "alternate_binding", "default_filters")
+	if err != nil {
+		return err
 	}
 
-	schemaMap := resourceQueue().Schema
-	for key, v := range schemaMap {
-		_, keySet := d.GetOk(key)
-		keyCamelCased := convertToCamelCase(key)
-		value, attributeSet := (*attributes)[keyCamelCased]
+	_, keySet := d.GetOk("alternate_binding")
+	value, attributeSet := (*attributes)["alternateBinding"]
+	if keySet || attributeSet {
+		val := value.(map[string]interface{})
+		value = []interface{}{createMapWithKeysUnderscored(&val)}
+		err = d.Set("alternate_binding", value)
+		if err != nil {
+			return err
+		}
+	}
 
-		if key != "virtual_host_node" && key != "virtual_host" && (keySet || attributeSet) {
-			isString := false
-			if value != nil {
-				_, isString = value.(string)
-			}
-
-			if key == "alternate_binding" {
-				val := value.(map[string]interface{})
-				value = []interface{}{createMapWithKeysUnderscored(&val)}
-			}
-			if key == "default_filters" && value != nil && !isString {
-				jsonData, err := json.Marshal(value)
-				if err != nil {
-					return err
-				}
-				value = string(jsonData)
-			}
-
-			value, err = convertIfValueIsStringWhenPrimitiveIsExpected(value, v.Type)
+	_, keySet = d.GetOk("default_filters")
+	value, attributeSet = (*attributes)["defaultFilters"]
+	if keySet || attributeSet {
+		isString := false
+		if value != nil {
+			_, isString = value.(string)
+		}
+		if value != nil && !isString {
+			jsonData, err := json.Marshal(value)
 			if err != nil {
 				return err
 			}
-			err = d.Set(key, value)
+			value = string(jsonData)
+			err = d.Set("default_filters", value)
 			if err != nil {
 				return err
 			}

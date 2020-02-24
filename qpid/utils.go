@@ -244,3 +244,39 @@ func assertExpectedAndRemovedAttributes(actual *map[string]interface{}, expected
 
 	return nil
 }
+
+func applyResourceAttributes(d *schema.ResourceData, attributes *map[string]interface{}, exclude ...string) error {
+	if len(*attributes) == 0 {
+		return nil
+	}
+
+	excludes := arrayOfStringsToMap(exclude)
+	schemaMap := resourceKeyStore().Schema
+	for key, v := range schemaMap {
+		if _, excluded := excludes[key]; excluded {
+			continue
+		}
+
+		_, keySet := d.GetOk(key)
+		keyCamelCased := convertToCamelCase(key)
+		value, attributeSet := (*attributes)[keyCamelCased]
+
+		if keySet || attributeSet {
+			value, err := convertIfValueIsStringWhenPrimitiveIsExpected(value, v.Type)
+			if err != nil {
+				return err
+			}
+
+			if v.Sensitive {
+				continue
+			}
+
+			err = d.Set(key, value)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

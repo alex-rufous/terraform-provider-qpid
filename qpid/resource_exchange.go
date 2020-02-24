@@ -193,34 +193,28 @@ func readExchange(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if len(*attributes) == 0 {
-		return nil
+	err = applyResourceAttributes(d, attributes, "virtual_host_node", "virtual_host", "alternate_binding")
+	if err != nil {
+		return err
 	}
 
-	schemaMap := resourceExchange().Schema
-	for key, v := range schemaMap {
-		_, keySet := d.GetOk(key)
-		keyCamelCased := convertToCamelCase(key)
-		value, attributeSet := (*attributes)[keyCamelCased]
-
-		if key != "virtual_host_node" && key != "virtual_host" && (keySet || attributeSet) {
-
-			if key == "alternate_binding" {
-				val := value.(map[string]interface{})
+	_, keySet := d.GetOk("alternate_binding")
+	value, attributeSet := (*attributes)[("alternateBinding")]
+	if keySet || attributeSet {
+		if value != nil {
+			val, validType := value.(map[string]interface{})
+			if validType {
 				value = []interface{}{createMapWithKeysUnderscored(&val)}
-			}
-
-			value, err = convertIfValueIsStringWhenPrimitiveIsExpected(value, v.Type)
-			if err != nil {
-				return err
-			}
-			err = d.Set(key, value)
-			if err != nil {
-				return err
+			} else {
+				value = nil
 			}
 		}
-	}
 
+		err = d.Set("alternate_binding", value)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

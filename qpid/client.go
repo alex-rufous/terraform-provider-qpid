@@ -367,3 +367,23 @@ func (c *Client) UpdateAccessControlProvider(name string, attributes *map[string
 func (c *Client) GetAccessControlProviders() (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("accesscontrolprovider", true)
 }
+
+func (c *Client) CreateKeyStore(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("keystore", attributes)
+}
+
+func (c *Client) GetKeyStore(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("keystore/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteKeyStore(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("keystore/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateKeyStore(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("keystore/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetKeyStores() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("keystore", true)
+}
