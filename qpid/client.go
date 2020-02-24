@@ -387,3 +387,23 @@ func (c *Client) UpdateKeyStore(name string, attributes *map[string]interface{})
 func (c *Client) GetKeyStores() (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("keystore", true)
 }
+
+func (c *Client) CreateTrustStore(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("truststore", attributes)
+}
+
+func (c *Client) GetTrustStore(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("truststore/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteTrustStore(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("truststore/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateTrustStore(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("truststore/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetTrustStores() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("truststore", true)
+}
