@@ -407,3 +407,23 @@ func (c *Client) UpdateTrustStore(name string, attributes *map[string]interface{
 func (c *Client) GetTrustStores() (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("truststore", true)
 }
+
+func (c *Client) CreatePort(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("port", attributes)
+}
+
+func (c *Client) GetPort(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("port/" + url.PathEscape(name))
+}
+
+func (c *Client) DeletePort(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("port/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdatePort(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("port/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetPorts() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("port", true)
+}

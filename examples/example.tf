@@ -356,3 +356,34 @@ resource "qpid_key_store" "my_keystore" {
   private_key_url = "data:;base64,MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC83m//nfqePNdogJSRCXxYRyyaPJkCi/o0IlfGaNtgoFskwUCjJE1Wj7TFKSFVey2vGN3MwgJYSTRHrudiaTZxPYtVyD8YkMd5JipRg7xURvpunKkIvQd9d9Pg1bmzVoKc8M7NmNpZUV219hywLNh02xReZbFmzDy9ec09uP6Czec6GMsKiM9ujUJAMni+EPmBDdgBuFQzzVHAJlQGERptMN47cn57OTes/dyDXvKF/I63Zl20NnRFg5EozgZmhKkyk5BzYHFPfOB+NSS1nhAsZ4h1onjMmDo2N8R2PPSC6KwteaKghd5oT4AJyR3f+eBf3/R3IrnM+wViPn/BQiq3AgMBAAECggEATrWklzKPL0LLwpFTWN5LI78Fp4F5gsYzD2cAjX9FbY9mbHrdJSAL2vcorsHlUmpzL3V9ecegkopvbzBE3Y5bUfYEC0vYf7RWbPaqzC3KXpT16QMArtOYO4Gkmx52tXZoGF+Cz8vTs0VleF+ItSL7Uje61VwsAls7NPt9vStLZdcQs9PiNyF2qRVc2q/csBzJlyJfJWERq9y7hBrwhvQmHtDa0NbjC0CGvRgPk28HDyGwblN/4XUH/xmWrLHSn2sGOD4DsAJJayb256MmvEUL+HUo6rlhbPOG5hgn0vYBJGFSRNEZI/Ocy905bjN/huxsICoUGYUi13q8iuOJr/A3AQKBgQD5smGPu6PJXx55hA1IUsGxGYOxEKn06z9+iotWZZmV2Gq51N9stQBmcj1TPDYZrLMxagDddPKSyQFbm6AIln16+Qd0qLAEqZ0QDq3d+eMS7YoTIbutzeyPLoP74kXhBahzoCB4jPqIG7LruCUEkBA5IkgOxRFsFHeVC5DLCCCLzwKBgQDBoveplVir+p/E1dIvq2iJdHmYsl3KZCngGVm1xepsQhMjCPoQGsWfAvloBtXQnh26IlFr9GI8etgWmT9k+xd5er6v1NTHZ3udTwpdrywjz7nnAbIwdzNbAWmRSNmktqqjRhSlmtkqNnjWMu0BhOPtAkv426xB56B+1UDIyWKkmQKBgQCi8VwnHqy4SSEq7Rh53L9XIa5FivlNwYJywlhBLhX2qf6jfB2847T6JYyNV5p6UK+zDFi6K4nsbc08Cad6UzJZYE8UOsx6jnDXPK0LUPl0rZxP9dBykBHSMemhIry1JisSISlvYZhP37t3hXhqrNRZZFyffsxqukR698wqIgiTEwKBgQC8fJg7uSaxcarn/YM159JASuK6YpWtl0az37lVmawRaVgbeHeCCa1olYqVWmHzSpaBQzqirSaa3LFPfikZcNlu5K6Nlczxtae8ft4GR6fdzCyX0yzSxJV29q7+Pz2seisr9+HNOig+UPva9YODQQplASFWwu6w0HmIPKltSar9sQJ/YFUxftE1HF8SdBFVONfz4WOUYHqr+uv69KKHgWDYHCGP4vgzZRmHs8V7cGUYtoWX0PJGjDa82sTx85iRRJk1tvot+GBd1gxAbot+bKBMjeJ6jJ9IJ1v4Bp+4yGppSD8f8rW7MKkJYrhkWY5ODcuc0hd41C0ARerj+0zAZpq5UA=="
   certificate_url = "data:;base64,MIIC7jCCAdagAwIBAgIRAIOytEG1ugWCCq9v7KzoHV4wDQYJKoZIhvcNAQELBQAwEjEQMA4GA1UEChMHRm9vIE9yZzAgFw0yMDAyMjQxNDAwNThaGA8yMTIwMDEzMTE0MDA1OFowEjEQMA4GA1UEChMHRm9vIE9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALzeb/+d+p4812iAlJEJfFhHLJo8mQKL+jQiV8Zo22CgWyTBQKMkTVaPtMUpIVV7La8Y3czCAlhJNEeu52JpNnE9i1XIPxiQx3kmKlGDvFRG+m6cqQi9B3130+DVubNWgpzwzs2Y2llRXbX2HLAs2HTbFF5lsWbMPL15zT24/oLN5zoYywqIz26NQkAyeL4Q+YEN2AG4VDPNUcAmVAYRGm0w3jtyfns5N6z93INe8oX8jrdmXbQ2dEWDkSjOBmaEqTKTkHNgcU984H41JLWeECxniHWieMyYOjY3xHY89ILorC15oqCF3mhPgAnJHd/54F/f9Hciucz7BWI+f8FCKrcCAwEAAaM9MDswDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMBQGA1UdEQQNMAuCCWxvY2FsaG9zdDANBgkqhkiG9w0BAQsFAAOCAQEAHAEbEKY2pco3brCwc7slCMgwDjuYwRnGU7uwfIvoe8KHRZDzmBm1/JjqCWVFUhE7sJDg4/aeomd3TEObVH+X2+QScws4aniRGMC6vNAqKn1JX1M54sixFHO7LIArVNmEc/5H8mMfKJ2fo4Ih9PtRA69530713gmugdYla8D5VrIQJKPUhEJyLuYdTqmMfJEDJLtlRgjxzlgb6DENhsGZIM4/kJVJ5Tvp1kvqLo9Z6ctnMoZzNwPSj/b/KH4KGf5jm5AcVynpAztKPbCCFX6s6pMDb0SxEgeBIJSLx7YIcykb4NW85GPOVipW1NoeAlcD+rKqtGroxCPdFMDQCn8c6g=="
 }
+
+
+resource "qpid_trust_store" "my_truststore" {
+  name = "my_truststore"
+  type = "SiteSpecificTrustStore"
+  site_url = "https://google.com"
+}
+
+
+resource "qpid_port" "my_amqp_port" {
+  depends_on = [qpid_authentication_provider.auth, qpid_key_store.my_keystore]
+  name = "my_amqp_port"
+  type = "AMQP"
+  port = 0
+  authentication_provider = "auth"
+  protocols = ["AMQP_1_0"]
+  transports = ["TCP", "SSL"]
+  key_store = "my_keystore"
+}
+
+
+resource "qpid_port" "my_http_port" {
+  depends_on = [qpid_authentication_provider.auth, qpid_key_store.my_keystore]
+  name = "my_http_port"
+  type = "HTTP"
+  port = 0
+  authentication_provider = "auth"
+  protocols = ["HTTP"]
+  transports = ["TCP", "SSL"]
+  key_store = "my_keystore"
+}

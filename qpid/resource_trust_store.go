@@ -33,7 +33,7 @@ func resourceTrustStore() *schema.Resource {
 				ForceNew:    true,
 				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
 					value := v.(string)
-					valid := value == "FileTrustStore" || value == "NonJavaTrustStore"
+					valid := value == "FileTrustStore" || value == "NonJavaTrustStore" || value == "SiteSpecificTrustStore"
 
 					if !valid {
 						errors = append(errors, fmt.Errorf("invalid trust store type value : '%q'", v))

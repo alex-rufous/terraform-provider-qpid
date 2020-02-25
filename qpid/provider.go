@@ -98,6 +98,7 @@ func Provider() terraform.ResourceProvider {
 			"qpid_access_control_provider": resourceAccessControlProvider(),
 			"qpid_key_store":               resourceKeyStore(),
 			"qpid_trust_store":             resourceTrustStore(),
+			"qpid_port":                    resourcePort(),
 		},
 
 		ConfigureFunc: providerConfigure,
