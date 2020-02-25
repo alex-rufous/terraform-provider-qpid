@@ -1,66 +1,21 @@
 package qpid
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/base64"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"log"
-	"math/big"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func TestAcceptanceTrustStore(t *testing.T) {
 
-	var certificateEncoded, privateKeyEncoded string
+	_, certificateBytes, err := generateSelfSigned("Foo Org", "localhost")
 	storeType := "NonJavaTrustStore"
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		log.Fatalf("Failed to generate private key: %s", err)
 		storeType = "SiteSpecificTrustStore"
-	} else {
-		notBefore := time.Now()
-		notAfter := notBefore.Add(365 * 24 * time.Hour)
-		serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
-		serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-		if err != nil {
-			log.Fatalf("Failed to generate serial number: %s", err)
-			storeType = "SiteSpecificTrustStore"
-		}
-
-		template := x509.Certificate{
-			SerialNumber: serialNumber,
-			Subject: pkix.Name{
-				Organization: []string{"Foo Org"},
-			},
-			NotBefore:             notBefore,
-			NotAfter:              notAfter,
-			KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-			ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-			BasicConstraintsValid: false,
-			DNSNames:              []string{"localhost"},
-		}
-
-		certificateBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-		if err != nil {
-			log.Fatalf("Failed to create certificate: %s", err)
-			storeType = "SiteSpecificTrustStore"
-		}
-
-		certificateEncoded = base64.StdEncoding.EncodeToString(certificateBytes)
-		privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
-		if err != nil {
-			log.Fatalf("Unable to marshal private key: %v", err)
-			storeType = "SiteSpecificTrustStore"
-		}
-		privateKeyEncoded = base64.StdEncoding.EncodeToString(privateKeyBytes)
 	}
+	certificateEncoded := certificateBytesToBase64(certificateBytes)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAcceptancePreCheck(t) },
@@ -69,7 +24,7 @@ func TestAcceptanceTrustStore(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// test new trust store creation from configuration
-				Config: getTrustStoreConfiguration(storeType, privateKeyEncoded, certificateEncoded),
+				Config: getTrustStoreConfiguration(storeType, certificateEncoded),
 				Check: testAcceptanceTrustStoreCheck(
 					testAcceptanceTrustStoreResource,
 					&map[string]interface{}{"name": testAcceptanceTrustStoreName},
@@ -78,7 +33,7 @@ func TestAcceptanceTrustStore(t *testing.T) {
 			{
 				// test trust store restoration from configuration after its deletion on broker side
 				PreConfig: dropTrustStore(testAcceptanceTrustStoreName),
-				Config:    getTrustStoreConfiguration(storeType, privateKeyEncoded, certificateEncoded),
+				Config:    getTrustStoreConfiguration(storeType, certificateEncoded),
 				Check: testAcceptanceTrustStoreCheck(
 					testAcceptanceTrustStoreResource,
 					&map[string]interface{}{"name": testAcceptanceTrustStoreName},
@@ -86,7 +41,7 @@ func TestAcceptanceTrustStore(t *testing.T) {
 			},
 			{
 				// test trust store update
-				Config: getTrustStoreConfigurationWithAttributes(storeType, privateKeyEncoded, certificateEncoded, `context = {"foo"="bar"}`),
+				Config: getTrustStoreConfigurationWithAttributes(storeType, certificateEncoded, `context = {"foo"="bar"}`),
 				Check: testAcceptanceTrustStoreCheck(
 					testAcceptanceTrustStoreResource,
 					&map[string]interface{}{"name": testAcceptanceTrustStoreName,
@@ -95,7 +50,7 @@ func TestAcceptanceTrustStore(t *testing.T) {
 			},
 			{
 				// test trust store attribute removal
-				Config: getTrustStoreConfiguration(storeType, privateKeyEncoded, certificateEncoded),
+				Config: getTrustStoreConfiguration(storeType, certificateEncoded),
 				Check: testAcceptanceTrustStoreCheck(
 					testAcceptanceTrustStoreResource,
 					&map[string]interface{}{"name": testAcceptanceTrustStoreName},
@@ -170,11 +125,11 @@ const testAcceptanceTrustStoreResourceName = "qpid_trust_store"
 const testAcceptanceTrustStoreName = "acceptance_test_trust_store"
 const testAcceptanceTrustStoreResource = testAcceptanceTrustStoreResourceName + "." + testAcceptanceTrustStoreName
 
-func getTrustStoreConfiguration(storeType string, privateKeyEncoded string, certificateEncoded string) string {
-	return getTrustStoreConfigurationWithAttributes(storeType, privateKeyEncoded, certificateEncoded)
+func getTrustStoreConfiguration(storeType string, certificateEncoded string) string {
+	return getTrustStoreConfigurationWithAttributes(storeType, certificateEncoded)
 }
 
-func getTrustStoreConfigurationWithAttributes(storeType string, privateKeyEncoded string, certificateEncoded string, entries ...string) string {
+func getTrustStoreConfigurationWithAttributes(storeType string, certificateEncoded string, entries ...string) string {
 	config := `
 resource "` + testAcceptanceTrustStoreResourceName + `" "` + testAcceptanceTrustStoreName + `" {
     name = "` + testAcceptanceTrustStoreName + `"

@@ -1,15 +1,22 @@
 package qpid
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -279,4 +286,54 @@ func applyResourceAttributes(d *schema.ResourceData, attributes *map[string]inte
 	}
 
 	return nil
+}
+
+func generateSelfSigned(subject, host string) (*rsa.PrivateKey, *[]byte, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		log.Fatalf("Failed to generate private key: %s", err)
+		return nil, nil, err
+	} else {
+		notBefore := time.Now()
+		notAfter := notBefore.Add(365 * 24 * time.Hour)
+		serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+		serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+		if err != nil {
+			log.Fatalf("Failed to generate serial number: %s", err)
+			return nil, nil, err
+		}
+
+		template := x509.Certificate{
+			SerialNumber: serialNumber,
+			Subject: pkix.Name{
+				Organization: []string{subject},
+			},
+			NotBefore:             notBefore,
+			NotAfter:              notAfter,
+			KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+			ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+			BasicConstraintsValid: false,
+			DNSNames:              []string{host},
+		}
+
+		certificateBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+		if err != nil {
+			log.Fatalf("Failed to create certificate: %s", err)
+			return nil, nil, err
+		}
+		return privateKey, &certificateBytes, nil
+	}
+}
+
+func certificateBytesToBase64(certificateBytes *[]byte) string {
+	return base64.StdEncoding.EncodeToString(*certificateBytes)
+}
+
+func privateKeyToBase64(privateKey *rsa.PrivateKey) (string, error) {
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		log.Fatalf("Unable to marshal private key: %v", err)
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(privateKeyBytes), nil
 }
