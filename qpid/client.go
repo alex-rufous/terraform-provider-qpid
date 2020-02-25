@@ -427,3 +427,23 @@ func (c *Client) UpdatePort(name string, attributes *map[string]interface{}) (*h
 func (c *Client) GetPorts() (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("port", true)
 }
+
+func (c *Client) CreateVirtualHostAlias(portName string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("virtualhostalias/"+url.PathEscape(portName), attributes)
+}
+
+func (c *Client) GetVirtualHostAlias(portName string, name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("virtualhostalias/" + url.PathEscape(portName) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteVirtualHostAlias(portName string, name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("virtualhostalias/" + url.PathEscape(portName) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateVirtualHostAlias(portName string, name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("virtualhostalias/"+url.PathEscape(portName)+"/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetVirtualHostAliases(portName string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("virtualhostalias/"+url.PathEscape(portName), true)
+}
