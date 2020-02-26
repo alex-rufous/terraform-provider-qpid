@@ -387,3 +387,10 @@ resource "qpid_port" "my_http_port" {
   transports = ["TCP", "SSL"]
   key_store = "my_keystore"
 }
+
+resource "qpid_virtual_host_alias" "my_port_alias" {
+  depends_on = [qpid_port.my_amqp_port]
+  port = "my_amqp_port"
+  type = "patternMatchingAlias"
+  pattern = "^test$"
+}

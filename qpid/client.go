@@ -447,3 +447,23 @@ func (c *Client) UpdateVirtualHostAlias(portName string, name string, attributes
 func (c *Client) GetVirtualHostAliases(portName string) (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("virtualhostalias/"+url.PathEscape(portName), true)
 }
+
+func (c *Client) CreateBrokerLogger(attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("brokerlogger", attributes)
+}
+
+func (c *Client) GetBrokerLogger(name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("brokerlogger/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteBrokerLogger(name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("brokerlogger/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateBrokerLogger(name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("brokerlogger/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetBrokerLoggers() (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("brokerlogger", true)
+}
