@@ -43,7 +43,7 @@ func resourceVirtualHostAlias() *schema.Resource {
 					valid := value == "hostnameAlias" || value == "patternMatchingAlias" || value == "systemAddressAlias" || value == "nameAlias" || value == "defaultAlias"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid alias type value : '%q'. Allowed values: \"managed\"", v))
+						errors = append(errors, fmt.Errorf("invalid alias type value : '%v'", v))
 					}
 
 					return

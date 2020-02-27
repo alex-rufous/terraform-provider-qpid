@@ -47,7 +47,7 @@ func resourceGroupMember() *schema.Resource {
 					valid := value == "ManagedGroupMember"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid group member type value : '%q'. Allowed values: \"managed\"", v))
+						errors = append(errors, fmt.Errorf("invalid group member type value : '%v'", v))
 					}
 
 					return

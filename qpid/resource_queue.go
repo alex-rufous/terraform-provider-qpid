@@ -52,7 +52,7 @@ func resourceQueue() *schema.Resource {
 					valid := value == "standard" || value == "priority" || value == "sorted" || value == "lvq"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid queue type value : '%q'. Allowed values: \"standard\", \"priority\", \"sorted\", \"lvq\"", v))
+						errors = append(errors, fmt.Errorf("invalid queue type value : '%v'. Allowed values: \"standard\", \"priority\", \"sorted\", \"lvq\"", v))
 					}
 
 					return

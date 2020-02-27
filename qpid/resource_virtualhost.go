@@ -41,7 +41,7 @@ func resourceVirtualHost() *schema.Resource {
 					valid := value == "ProvidedStore" || value == "BDB" || value == "DERBY" || value == "JDBC"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid virtual host type value : '%q'. Allowed values: \"ProvidedStore\", \"BDB\", \"DERBY\", \"JDBC\"", v))
+						errors = append(errors, fmt.Errorf("invalid virtual host type value : '%v'. Allowed values: \"ProvidedStore\", \"BDB\", \"DERBY\", \"JDBC\"", v))
 					}
 
 					return

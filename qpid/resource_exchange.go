@@ -49,7 +49,7 @@ func resourceExchange() *schema.Resource {
 					valid := value == "direct" || value == "topic" || value == "fanout" || value == "headers"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid exchange type value : '%q'. Allowed values: \"direct\", \"topic\", \"fanout\", \"headers\"", v))
+						errors = append(errors, fmt.Errorf("invalid exchange type value : '%v'. Allowed values: \"direct\", \"topic\", \"fanout\", \"headers\"", v))
 					}
 
 					return

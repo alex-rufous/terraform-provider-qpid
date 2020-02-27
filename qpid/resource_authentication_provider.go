@@ -39,7 +39,7 @@ func resourceAuthenticationProvider() *schema.Resource {
 						value == "Plain" || value == "MD5"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid authentication provider type value : '%q'", v))
+						errors = append(errors, fmt.Errorf("invalid authentication provider type value : '%v'", v))
 					}
 
 					return
@@ -259,7 +259,7 @@ func resourceAuthenticationProvider() *schema.Resource {
 					valid := value == "NONE" || value == "SIMPLE" || value == "GSSAPI"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid authentication method value : '%q'. Allowed values: \"NONE\", \"SIMPLE\", \"GSSAPI\"", v))
+						errors = append(errors, fmt.Errorf("invalid authentication method value : '%v'. Allowed values: \"NONE\", \"SIMPLE\", \"GSSAPI\"", v))
 					}
 
 					return

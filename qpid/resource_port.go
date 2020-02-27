@@ -36,7 +36,7 @@ func resourcePort() *schema.Resource {
 					valid := value == "AMQP" || value == "HTTP"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid port type value : '%q'", v))
+						errors = append(errors, fmt.Errorf("invalid port type value : '%v'", v))
 					}
 
 					return

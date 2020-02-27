@@ -41,7 +41,7 @@ func resourceUser() *schema.Resource {
 					valid := value == "managed"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid user type value : '%q'. Allowed values: \"managed\"", v))
+						errors = append(errors, fmt.Errorf("invalid user type value : '%v'. Allowed values: \"managed\"", v))
 					}
 
 					return

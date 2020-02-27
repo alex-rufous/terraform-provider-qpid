@@ -37,7 +37,7 @@ func resourceVirtualHostNode() *schema.Resource {
 					valid := value == "JSON" || value == "BDB" || value == "DERBY" || value == "BDB_HA" || value == "JDBC"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid virtual host node type value : '%q'. Allowed values: \"JSON\", \"BDB\", \"DERBY\", \"BDB_HA\", \"JDBC\"", v))
+						errors = append(errors, fmt.Errorf("invalid virtual host node type value : '%v'. Allowed values: \"JSON\", \"BDB\", \"DERBY\", \"BDB_HA\", \"JDBC\"", v))
 					}
 
 					return

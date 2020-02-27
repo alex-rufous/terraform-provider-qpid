@@ -38,7 +38,7 @@ func resourceGroupProvider() *schema.Resource {
 						value == "ManagedGroupProvider"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid group provider type value : '%q'", v))
+						errors = append(errors, fmt.Errorf("invalid group provider type value : '%v'", v))
 					}
 
 					return

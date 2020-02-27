@@ -36,7 +36,7 @@ func resourceBrokerLogger() *schema.Resource {
 					valid := value == "File" || value == "Console" || value == "BrokerLogbackSocket" || value == "Memory" || value == "Syslog" || value == "JDBC"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid broker logger type value : '%q'", v))
+						errors = append(errors, fmt.Errorf("invalid broker logger type value : '%v'", v))
 					}
 
 					return

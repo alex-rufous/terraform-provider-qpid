@@ -36,7 +36,7 @@ func resourceAccessControlProvider() *schema.Resource {
 					valid := value == "AllowAll" || value == "AclFile" || value == "RuleBased"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid access control provider type value : '%q'", v))
+						errors = append(errors, fmt.Errorf("invalid access control provider type value : '%v'", v))
 					}
 
 					return
@@ -95,7 +95,7 @@ func resourceAccessControlProvider() *schema.Resource {
 									value == "USER" || value == "GROUP" || value == "BROKER" || value == "METHOD"
 
 								if !valid {
-									errors = append(errors, fmt.Errorf("invalid object type value : '%q'", v))
+									errors = append(errors, fmt.Errorf("invalid object type value : '%v'", v))
 								}
 
 								return
@@ -112,7 +112,7 @@ func resourceAccessControlProvider() *schema.Resource {
 									value == "PURGE" || value == "ACCESS_LOGS" || value == "SHUTDOWN"
 
 								if !valid {
-									errors = append(errors, fmt.Errorf("invalid operation value : '%q'", v))
+									errors = append(errors, fmt.Errorf("invalid operation value : '%v'", v))
 								}
 
 								return
@@ -133,7 +133,7 @@ func resourceAccessControlProvider() *schema.Resource {
 								valid := value == "ALLOW" || value == "ALLOW_LOG" || value == "DENY" || value == "DENY_LOG"
 
 								if !valid {
-									errors = append(errors, fmt.Errorf("invalid outcome value : '%q'", v))
+									errors = append(errors, fmt.Errorf("invalid outcome value : '%v'", v))
 								}
 
 								return
@@ -154,7 +154,7 @@ func resourceAccessControlProvider() *schema.Resource {
 					valid := value == "ALLOWED" || value == "DENIED" || value == "DEFER"
 
 					if !valid {
-						errors = append(errors, fmt.Errorf("invalid default result value : '%q'", v))
+						errors = append(errors, fmt.Errorf("invalid default result value : '%v'", v))
 					}
 
 					return
