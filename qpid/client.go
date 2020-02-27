@@ -467,3 +467,23 @@ func (c *Client) UpdateBrokerLogger(name string, attributes *map[string]interfac
 func (c *Client) GetBrokerLoggers() (*[]map[string]interface{}, error) {
 	return c.listConfiguredObjets("brokerlogger", true)
 }
+
+func (c *Client) CreateBrokerLoggerRule(loggerName string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("brokerloginclusionrule/"+url.PathEscape(loggerName), attributes)
+}
+
+func (c *Client) GetBrokerLoggerRule(loggerName string, name string) (*map[string]interface{}, error) {
+	return c.getConfiguredObject("brokerloginclusionrule/" + url.PathEscape(loggerName) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) DeleteBrokerLoggerRule(loggerName string, name string) (*http.Response, error) {
+	return c.deleteConfiguredObject("brokerloginclusionrule/" + url.PathEscape(loggerName) + "/" + url.PathEscape(name))
+}
+
+func (c *Client) UpdateBrokerLoggerRule(loggerName string, name string, attributes *map[string]interface{}) (*http.Response, error) {
+	return c.restClient.Post("brokerloginclusionrule/"+url.PathEscape(loggerName)+"/"+url.PathEscape(name), attributes)
+}
+
+func (c *Client) GetBrokerLoggerRules(loggerName string) (*[]map[string]interface{}, error) {
+	return c.listConfiguredObjets("brokerloginclusionrule/"+url.PathEscape(loggerName), true)
+}

@@ -101,6 +101,7 @@ func Provider() terraform.ResourceProvider {
 			"qpid_port":                    resourcePort(),
 			"qpid_virtual_host_alias":      resourceVirtualHostAlias(),
 			"qpid_broker_logger":           resourceBrokerLogger(),
+			"qpid_broker_logger_rule":      resourceBrokerLoggerRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
